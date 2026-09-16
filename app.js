@@ -1,2 +1,1 @@
-/** placeholder - will replace */
-console.log('polyrhythm');
+file:///workspace/polyrhythm-studio/app.js
