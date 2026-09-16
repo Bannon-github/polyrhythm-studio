@@ -1,1 +1,2 @@
-file:///workspace/polyrhythm-studio/app.js
+/** Polyrhythm Studio bootstrap — will be replaced */
+console.error('Loading Polyrhythm Studio...');
