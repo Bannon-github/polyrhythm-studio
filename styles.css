@@ -403,7 +403,6 @@ label.field .val {
 .chk input { accent-color: var(--accent); }
 
 .hint {
-  display: block;
   font-size: 0.72rem;
   color: var(--muted);
   line-height: 1.4;
@@ -423,4 +422,8 @@ label.field .val {
   .brand h1 { font-size: 0.95rem; }
   button, .btn { font-size: 0.78rem; padding: 0.42rem 0.65rem; }
   .voice-controls { grid-template-columns: 1fr 1fr; }
+}
+
+#visualMode, #preset {
+  max-width: 11rem;
 }
