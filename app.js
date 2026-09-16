@@ -15,6 +15,6 @@
     document.documentElement.appendChild(s);
   } catch (e) {
     document.body.innerHTML = "<pre style=\"color:#f88;padding:2rem\">Load failed: " + e +
-      "\nUse GitHub Pages or: npx serve .</pre>";
+      "\nUse a local server: python3 -m http.server 8765</pre>";
   }
 })();
