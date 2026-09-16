@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="description" content="Generative ambient polyrhythm studio — pendulum waves, circular rings, and linear beats with Web Audio." />
+  <meta name="description" content="Generative ambient polyrhythm studio — pendulum waves, mandala, triangles, hammer waves, and sine ribbons with Web Audio." />
   <meta name="theme-color" content="#05060a" />
   <title>Polyrhythm Studio</title>
   <link rel="stylesheet" href="styles.css" />
@@ -20,9 +20,15 @@
       </div>
       <div class="header-controls">
         <button type="button" id="playBtn" class="primary">Play</button>
-        <button type="button" data-mode="pendulum" class="active">Pendulum</button>
-        <button type="button" data-mode="circular">Circular</button>
-        <button type="button" data-mode="linear">Linear</button>
+        <select id="visualMode" aria-label="Visual mode">
+          <option value="pendulum">Pendulum</option>
+          <option value="circular">Circular</option>
+          <option value="linear">Linear</option>
+          <option value="mandala">Mandala</option>
+          <option value="triangles">Triangles</option>
+          <option value="waves">Waves</option>
+          <option value="sineRibbons">Sine ribbons</option>
+        </select>
         <select id="preset" aria-label="Presets"></select>
       </div>
     </header>
@@ -73,9 +79,12 @@
               <button type="button" data-sim-preset="medium">Medium</button>
               <button type="button" data-sim-preset="complex">Complex</button>
             </div>
+            <label class="field span2 chk" style="flex-direction:row;text-transform:none;letter-spacing:0;font-size:0.78rem;align-items:center">
+              <input type="checkbox" id="quadraticLength" /> Quadratic length (pendulum L ∝ T²)
+            </label>
             <p class="hint span2" style="grid-column:1/-1">
               Simplicity thins beat density and calms spacing — sparse lullaby vs busy polyrhythm.
-              Each voice also has its own simplicity slider.
+              Each voice also has its own simplicity slider. Quadratic length uses pendulum-wave math (longer = slower).
             </p>
           </div>
 
