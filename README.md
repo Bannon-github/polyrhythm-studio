@@ -2,20 +2,31 @@
 
 A **generative ambient polyrhythm** browser app: multiple rhythmic voices drift in and out of sync (pendulum-wave style), with Canvas visuals and Web Audio tones.
 
+**Live:** [https://bannon-github.github.io/polyrhythm-studio/](https://bannon-github.github.io/polyrhythm-studio/)
+
 **Channel functional model:** inspired by the Lucid Rhythms family of ambient polyrhythm / pendulum / wave visuals (e.g. *Hammer Waves*, *Space Pendulum*, *Sine Rhythms*, *Black Hole Reimagined*, *Space Lullaby*). **Not affiliated** with those creators or channels; this is an original open project with no copyrighted samples, videos, or cloned proprietary assets.
 
 ## Open the app
 
-Serve the folder over **http** (the runtime loads compressed payloads via `fetch`):
-
-- **Local:** `npx serve .` or `python3 -m http.server 8080` then open the printed URL.
+- **GitHub Pages (recommended):** [https://bannon-github.github.io/polyrhythm-studio/](https://bannon-github.github.io/polyrhythm-studio/)
+- **Local:** `npx serve .` or `python3 -m http.server 8080` then open the printed URL (needed because the runtime `fetch`es compressed payloads).
 - **Clone:** `git clone https://github.com/Bannon-github/polyrhythm-studio.git && cd polyrhythm-studio && npx serve .`
-- **GitHub Pages:** enable Pages (Deploy from branch → `/` on `main`) → `https://bannon-github.github.io/polyrhythm-studio/`
-- **Raw files:** browsing raw GitHub is fine for reading sources; run the app via Pages or a local static server (not `file://`).
 
 Click **Play** (or Space with page focus) to start audio + motion. Browsers require a user gesture before sound.
 
-Runtime files: `index.html`, `styles.css`, `app.js` (tiny loader), `app.payload.0-2.b64` (zlib-compressed studio source).
+Runtime files: `index.html`, `styles.css`, `app.js` (tiny loader), `app.payload.0–3.b64` (zlib-compressed studio source with **Session Ready** default). `.nojekyll` keeps GitHub Pages from running Jekyll on the static site.
+
+### Enabling / configuring Pages
+
+Pages cannot be fully enabled via the public API without admin rights on the repo. In GitHub UI:
+
+1. **Settings → Pages**
+2. Prefer **GitHub Actions** (uses `.github/workflows/deploy-pages.yml` on push to `main`), **or** **Deploy from a branch** → `main` / root (`/`). Both work with `.nojekyll`.
+3. After the first successful deploy, the site is at `https://bannon-github.github.io/polyrhythm-studio/`.
+
+### Custom domain
+
+Point a CNAME (or ALIAS/ANAME at the apex) to **`bannon-github.github.io`**, then add the hostname under **Settings → Pages → Custom domain**. Optionally commit a `CNAME` file at the repo root containing that hostname. Enforce HTTPS after DNS propagates.
 
 ## Features
 
@@ -35,6 +46,7 @@ When **Quadratic length** is on, pendulum string length scales with period squar
 Beats-in-cycle or period (seconds), pitch (note or Hz), waveform (`sine` / `triangle` / `saw` / `square` / `noise` / `bell` / `kick` / `pad`), volume, mute, color, pan, and **simplicity** (master + per-voice).
 
 ### Presets
+- **`Session Ready`** — default on first load (clean ambient start)
 - `3:2 classic`, `5:4`
 - `Space Pendulum`, `Hammer Waves`, `Deep Ambient / Black Hole`, `Space Lullaby`
 - `Sine Rhythms` — sineRibbons mode

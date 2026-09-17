@@ -4,7 +4,7 @@
     const parts = await Promise.all([0,1,2,3].map(i => fetch("app.payload." + i + ".b64").then(r => {
       if (!r.ok) throw new Error("payload." + i + " " + r.status);
       return r.text();
-    }));
+    })));
     const b64 = parts.join("").replace(/\s+/g, "");
     const bin = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
     const ds = new DecompressionStream("deflate");
