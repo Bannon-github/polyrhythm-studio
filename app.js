@@ -1,7 +1,7 @@
 /** Polyrhythm Studio loader — plain JS parts (verified) */
 (async () => {
   try {
-    const n = 2;
+    const n = 16;
     const parts = await Promise.all([...Array(n).keys()].map(i =>
       fetch("app.part" + i + ".js").then(r => {
         if (!r.ok) throw new Error("part" + i + " HTTP " + r.status);
