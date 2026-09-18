@@ -1,20 +1,22 @@
-/** Polyrhythm Studio loader — fetches split payload then inflates */
+/** Polyrhythm Studio loader — plain JS parts (verified) */
 (async () => {
   try {
-    const parts = await Promise.all([0,1,2,3].map(i => fetch("app.payload." + i + ".b64").then(r => {
-      if (!r.ok) throw new Error("payload." + i + " " + r.status);
-      return r.text();
-    })));
-    const b64 = parts.join("").replace(/\s+/g, "");
-    const bin = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
-    const ds = new DecompressionStream("deflate");
-    const ab = await new Response(new Blob([bin]).stream().pipeThrough(ds)).arrayBuffer();
-    const src = new TextDecoder().decode(ab);
+    const n = 2;
+    const parts = await Promise.all([...Array(n).keys()].map(i =>
+      fetch("app.part" + i + ".js").then(r => {
+        if (!r.ok) throw new Error("part" + i + " HTTP " + r.status);
+        return r.text();
+      })
+    ));
+    const code = parts.join("");
+    if (code.indexOf("Session Ready") < 0) throw new Error("loaded script incomplete");
     const s = document.createElement("script");
-    s.textContent = src;
+    s.textContent = code;
     document.documentElement.appendChild(s);
   } catch (e) {
-    document.body.innerHTML = "<pre style=\"color:#f88;padding:2rem\">Load failed: " + e +
-      "\nUse a local server: python3 -m http.server 8765</pre>";
+    const pre = document.createElement("pre");
+    pre.style.cssText = "color:#f88;padding:1rem;position:fixed;inset:0;background:#100;z-index:99999;white-space:pre-wrap";
+    pre.textContent = "Polyrhythm Studio failed to load:\n" + e;
+    document.body.appendChild(pre);
   }
 })();
