@@ -1,79 +1,55 @@
 # Polyrhythm Studio
 
-A generative ambient polyrhythm app that runs in the browser. Each voice is an orb on a fixed path. A shared line crosses those paths. The tone plays only when an orb crosses that line.
+A generative ambient polyrhythm app that runs in the browser. A tone plays only when a traveler meets the line for that machine. Each machine is its own layout, with its own panel and its own sounds. They are not layers stacked on one scene.
 
 **Live:** [https://bannon-github.github.io/polyrhythm-studio/](https://bannon-github.github.io/polyrhythm-studio/)
 
-Original work. No copyrighted samples, videos, or cloned assets. Not affiliated with any pendulum-wave or ambient channel.
+Original work. No copyrighted samples or cloned assets.
 
 ## Play
 
-Open the live page, or serve this folder (`npx serve .` or `python3 -m http.server 8080`) and open the printed URL. A local file URL will not load the scripts.
+Open the live page, or serve this folder (`npx serve .` or `python3 -m http.server 8080`). A local file URL will not load the scripts.
 
-Press **Play** (or Space while the page is focused). Browsers will not start sound until that gesture.
+Press **Play** (or Space while the page is focused). Hard-refresh after a deploy. The loader fetches `app.part0.js` through `app.part15.js`.
 
-Hard-refresh after a deploy. The loader fetches `app.part0.js` through `app.part15.js` with a cache-busting query.
+Pick a machine from the mode menu. The panel changes with the machine. Turning a dial does not replay every note.
 
-## How it works
+## Circular Rhythm
 
-Gate is the default view on a fresh load.
+Concentric rings. The inner ring is the highest pitch. The outer rings are lower. Orbs start lined up and share one speed, so an outer ring takes longer to reach the hit and the pattern drifts.
 
-- Each voice has a geometric path: a circle, a line, a square, or a cube-style edge loop. One orb usually travels that path.
-- One shared vertical line sits at the center. A voice sounds only when its orb crosses that line. The line is a glass slab, and a ring spreads outward on the crossing.
-- Orbs are living marks, not static dots. Low notes read darker and heavier. High notes read brighter.
-- Other views stay in the mode menu: Pendulum, Circular, Linear, Mandala, Triangles, Waves, and Sine ribbons.
+Hits are sparkle and reflection behind the rings, not a line drawn across the page. A liquid reflection sits on the other side of the scene. Zoom pulls back for more rings.
 
-### Looks
+One panel: **Rings**, **Chord** (C, Am, Em, G5, D5, C5), **Tempo**, **Line**, **Zoom**. Line off keeps the orbs moving and stops the hits.
 
-On Gate, a **Looks** row sits under the stage. Every look starts off and can be combined.
+Crossings play the mallet samples in `samples/gate/` (mono WAV, 48 kHz, 24-bit).
 
-- **Glass**, **Reflect**, **Clouds**, **Firebugs**, and **Wake** are separate layers.
-- **Ether** is a liquid sheet on the gate. Light on it comes from the orbs and the line. A crossing sends a shimmer outward.
-- **Cube** is a slowly turning neon box around the gate edge. Faces use different hues, and light steps along the edges.
+## Cube
 
-### Dials
+Its own machine. Nested cubes, smoked faces, copper edges, rising embers, and a dark slab behind. It does not use the ring look.
 
-Five dials sit on the page. Each has a colored backlight that follows the value it owns.
+On each face a traveler moves from the outer edge to the center and back, as a wave of square steps. The hit is that outer edge. Contact throws an ember burst and a reflection on the slab. There is no line across the page.
 
-- **Speed** is tempo.
-- **Volume** is the master level.
-- **Feel** is simplicity.
-- **Path** is the first voice's shape: Auto, Circle, Line, Square, or Cube.
-- **Space** is reverb.
+The panel is nest depth only. Face hits play the dry wood-blocks in `samples/cubes/`, not the ring mallets.
 
-A **heat** flag next to the preset menu reads `clean` at a normal level. If the output gets hot, the master eases down and the flag reads `hot`.
+## Gate
 
-## Prefixes
+Still in the menu. Orbs travel geometric paths and sound when they cross the shared center line. Older pendulum, mandala, wave, and ribbon views are in the same menu.
 
-The preset menu includes six Gate machines. Each sets path count, shape, speed, and the note for that path.
-
-- **Harmonic Ladder** — four lines, speeds 1:2:3:4, notes C2 C3 G3 C4.
-- **Soft Fifth** — two circles, speeds 2 and 3, notes G3 and D4.
-- **Just Third** — two squares, speeds 4 and 5, notes C4 and E4.
-- **Orbital** — three circles, speeds 4:5:6, notes C3 E3 G3.
-- **Pendulum Chord** — five lines, speeds 5 through 9, notes C3 D3 E3 G3 A3.
-- **Twin Fifth** — a G3 line at speed 2, plus two orbs on a D4 line at speed 3.
-
-Pitches are named notes. A later pass can lock those stacks to exact integer ratios from one root. Older presets (Session Ready, pendulum waves, mandala, and the rest) are still in the same menu.
-
-## Audio
-
-Crossings for sine, triangle, bell, and pad play original samples in `samples/gate/`. Those files are mono WAV, 48 kHz, 24-bit: C2, C3, D3, E3, G3, A3, C4, D4, and E4. The nearest note is chosen, then playback rate matches the voice. Noise, kick, saw, and square stay synthesized. If a file fails to load, the oscillator is the fallback.
-
-The master chain is gain, a soft saturator, a limiter, then the speakers.
+Gate dials, when that machine is showing: Speed, Volume, Feel, Path, and Space. A heat flag near the preset menu reads clean, and eases the level if the output gets hot.
 
 ## Files
 
 - `index.html` and `styles.css` are the page.
-- `app.js` loads `app.part0.js` through `app.part15.js` and runs them as one script.
-- `samples/gate/` holds the crossing samples and `manifest.json`.
-- `app.payload.*.b64` is an older compressed bundle. The live page does not fetch it.
+- `app.js` loads the `app.part*.js` files and runs them as one script.
+- `samples/gate/` is the Circular and Gate mallet bank. `samples/cubes/` is the Cube bank.
+- `app.payload.*.b64` is an older bundle. The live page does not fetch it.
 
-Save and Load use the browser's local storage. Clearing that storage returns a fresh Gate load.
+Save and Load use the browser's local storage.
 
 ## Pages
 
-GitHub Pages deploys from the `main` branch, root folder. The site is [https://bannon-github.github.io/polyrhythm-studio/](https://bannon-github.github.io/polyrhythm-studio/).
+GitHub Pages deploys from `main`, root folder.
 
 ```
 git clone https://github.com/Bannon-github/polyrhythm-studio.git
