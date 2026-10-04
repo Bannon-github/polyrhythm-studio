@@ -1,67 +1,86 @@
 # Polyrhythm Studio
 
-A **generative ambient polyrhythm** browser app: multiple rhythmic voices drift in and out of sync (pendulum-wave style), with Canvas visuals and Web Audio tones.
+A generative ambient polyrhythm app that runs in the browser. Each voice is an orb on a fixed path. A shared line crosses those paths. The tone plays only when an orb crosses that line.
 
 **Live:** [https://bannon-github.github.io/polyrhythm-studio/](https://bannon-github.github.io/polyrhythm-studio/)
 
-**Channel functional model:** inspired by the Lucid Rhythms family of ambient polyrhythm / pendulum / wave visuals (e.g. *Hammer Waves*, *Space Pendulum*, *Sine Rhythms*, *Black Hole Reimagined*, *Space Lullaby*). **Not affiliated** with those creators or channels; this is an original open project with no copyrighted samples, videos, or cloned proprietary assets.
+Original work. No copyrighted samples, videos, or cloned assets. Not affiliated with any pendulum-wave or ambient channel.
 
-## Open the app
+## Play
 
-- **GitHub Pages (recommended):** [https://bannon-github.github.io/polyrhythm-studio/](https://bannon-github.github.io/polyrhythm-studio/)
-- **Local:** `npx serve .` or `python3 -m http.server 8080` then open the printed URL (needed because the runtime `fetch`es compressed payloads).
-- **Clone:** `git clone https://github.com/Bannon-github/polyrhythm-studio.git && cd polyrhythm-studio && npx serve .`
+Open the live page, or serve this folder (`npx serve .` or `python3 -m http.server 8080`) and open the printed URL. A local file URL will not load the scripts.
 
-Click **Play** (or Space with page focus) to start audio + motion. Browsers require a user gesture before sound.
+Press **Play** (or Space while the page is focused). Browsers will not start sound until that gesture.
 
-Runtime files: `index.html`, `styles.css`, `app.js` (tiny loader), `app.payload.0–3.b64` (zlib-compressed studio source with **Session Ready** default). `.nojekyll` keeps GitHub Pages from running Jekyll on the static site.
+Hard-refresh after a deploy. The loader fetches `app.part0.js` through `app.part15.js` with a cache-busting query.
 
-### Enabling / configuring Pages
+## How it works
 
-Pages cannot be fully enabled via the public API without admin rights on the repo. In GitHub UI:
+Gate is the default view on a fresh load.
 
-1. **Settings → Pages**
-2. Prefer **GitHub Actions** (uses `.github/workflows/deploy-pages.yml` on push to `main`), **or** **Deploy from a branch** → `main` / root (`/`). Both work with `.nojekyll`.
-3. After the first successful deploy, the site is at `https://bannon-github.github.io/polyrhythm-studio/`.
+- Each voice has a geometric path: a circle, a line, a square, or a cube-style edge loop. One orb usually travels that path.
+- One shared vertical line sits at the center. A voice sounds only when its orb crosses that line. The line is a glass slab, and a ring spreads outward on the crossing.
+- Orbs are living marks, not static dots. Low notes read darker and heavier. High notes read brighter.
+- Other views stay in the mode menu: Pendulum, Circular, Linear, Mandala, Triangles, Waves, and Sine ribbons.
 
-### Custom domain
+### Looks
 
-Point a CNAME (or ALIAS/ANAME at the apex) to **`bannon-github.github.io`**, then add the hostname under **Settings → Pages → Custom domain**. Optionally commit a `CNAME` file at the repo root containing that hostname. Enforce HTTPS after DNS propagates.
+On Gate, a **Looks** row sits under the stage. Every look starts off and can be combined.
 
-## Features
+- **Glass**, **Reflect**, **Clouds**, **Firebugs**, and **Wake** are separate layers.
+- **Ether** is a liquid sheet on the gate. Light on it comes from the orbs and the line. A crossing sends a shimmer outward.
+- **Cube** is a slowly turning neon box around the gate edge. Faces use different hues, and light steps along the edges.
 
-### Visual modes
-- **Pendulum** — side-by-side pendulums with different periods. Optional **Quadratic length** (`L ∝ T²`).
-- **Circular** — concentric rings with orbiting beads (pulse orbits).
-- **Linear** — beat markers and a playhead.
-- **Mandala** — concentric petals/arcs rotating at each voice period.
-- **Triangles** — spinning N-gons (N=3+) whose rotation rate follows the voice period.
-- **Waves** — stacked horizontal sine/hammer wave bars (*Hammer Waves* feel).
-- **Sine ribbons** — stacked full-width sine curves (*Sine Rhythms* feel).
+### Dials
 
-### Quadratic Displacement (pendulum)
-When **Quadratic length** is on, pendulum string length scales with period squared (`L ∝ T²`), matching physical pendulums / classic “pendulum wave” demos: slower voices hang longer, faster ones shorter, so phases bloom and re-align visually.
+Five dials sit on the page. Each has a colored backlight that follows the value it owns.
 
-### Voices (up to 12)
-Beats-in-cycle or period (seconds), pitch (note or Hz), waveform (`sine` / `triangle` / `saw` / `square` / `noise` / `bell` / `kick` / `pad`), volume, mute, color, pan, and **simplicity** (master + per-voice).
+- **Speed** is tempo.
+- **Volume** is the master level.
+- **Feel** is simplicity.
+- **Path** is the first voice's shape: Auto, Circle, Line, Square, or Cube.
+- **Space** is reverb.
 
-### Presets
-- **`Session Ready`** — default on first load (clean ambient start)
-- `3:2 classic`, `5:4`
-- `Space Pendulum`, `Hammer Waves`, `Deep Ambient / Black Hole`, `Space Lullaby`
-- `Sine Rhythms` — sineRibbons mode
-- `Mandala` — mandala mode
-- `Spinning Triangles` — triangles mode
-- `Pulse Orbits` — circular + orbit-y phased voices
-- `Lost In Space` — very sparse, high simplicity, quadratic pendulum
+A **heat** flag next to the preset menu reads `clean` at a normal level. If the output gets hot, the master eases down and the flag reads `hot`.
 
-**Save / Load** uses `localStorage`. Polyrhythm helper sets A:B on the first two voices. **Evolve** drifts pitches/periods.
+## Prefixes
+
+The preset menu includes six Gate machines. Each sets path count, shape, speed, and the note for that path.
+
+- **Harmonic Ladder** — four lines, speeds 1:2:3:4, notes C2 C3 G3 C4.
+- **Soft Fifth** — two circles, speeds 2 and 3, notes G3 and D4.
+- **Just Third** — two squares, speeds 4 and 5, notes C4 and E4.
+- **Orbital** — three circles, speeds 4:5:6, notes C3 E3 G3.
+- **Pendulum Chord** — five lines, speeds 5 through 9, notes C3 D3 E3 G3 A3.
+- **Twin Fifth** — a G3 line at speed 2, plus two orbs on a D4 line at speed 3.
+
+Pitches are named notes. A later pass can lock those stacks to exact integer ratios from one root. Older presets (Session Ready, pendulum waves, mandala, and the rest) are still in the same menu.
 
 ## Audio
-Web Audio lookahead scheduling, dry + generated-impulse reverb + feedback delay. All tones synthesized — no sample packs from videos.
 
-## Credit
-Aesthetic and **channel functional model** inspiration from publicly shared ambient polyrhythm pendulum / wave videos (Lucid Rhythms–style). Independent, original, **not affiliated**.
+Crossings for sine, triangle, bell, and pad play original samples in `samples/gate/`. Those files are mono WAV, 48 kHz, 24-bit: C2, C3, D3, E3, G3, A3, C4, D4, and E4. The nearest note is chosen, then playback rate matches the voice. Noise, kick, saw, and square stay synthesized. If a file fails to load, the oscillator is the fallback.
+
+The master chain is gain, a soft saturator, a limiter, then the speakers.
+
+## Files
+
+- `index.html` and `styles.css` are the page.
+- `app.js` loads `app.part0.js` through `app.part15.js` and runs them as one script.
+- `samples/gate/` holds the crossing samples and `manifest.json`.
+- `app.payload.*.b64` is an older compressed bundle. The live page does not fetch it.
+
+Save and Load use the browser's local storage. Clearing that storage returns a fresh Gate load.
+
+## Pages
+
+GitHub Pages deploys from the `main` branch, root folder. The site is [https://bannon-github.github.io/polyrhythm-studio/](https://bannon-github.github.io/polyrhythm-studio/).
+
+```
+git clone https://github.com/Bannon-github/polyrhythm-studio.git
+cd polyrhythm-studio
+npx serve .
+```
 
 ## License
-Use freely for personal and educational projects. Attribution appreciated but not required.
+
+Use it freely for personal and educational projects. Attribution is appreciated, not required.
