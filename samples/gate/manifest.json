@@ -1,0 +1,65 @@
+[
+  {
+    "note": "C2",
+    "hz": 65.40639,
+    "file": "C2.wav",
+    "duration": 2.25,
+    "timbre": "dark"
+  },
+  {
+    "note": "C3",
+    "hz": 130.81278,
+    "file": "C3.wav",
+    "duration": 1.74,
+    "timbre": "dark"
+  },
+  {
+    "note": "D3",
+    "hz": 146.83238,
+    "file": "D3.wav",
+    "duration": 1.655,
+    "timbre": "warm"
+  },
+  {
+    "note": "E3",
+    "hz": 164.81378,
+    "file": "E3.wav",
+    "duration": 1.57,
+    "timbre": "warm"
+  },
+  {
+    "note": "G3",
+    "hz": 195.99772,
+    "file": "G3.wav",
+    "duration": 1.4425,
+    "timbre": "warm"
+  },
+  {
+    "note": "A3",
+    "hz": 220.0,
+    "file": "A3.wav",
+    "duration": 1.3575,
+    "timbre": "warm"
+  },
+  {
+    "note": "C4",
+    "hz": 261.62557,
+    "file": "C4.wav",
+    "duration": 1.23,
+    "timbre": "warm"
+  },
+  {
+    "note": "D4",
+    "hz": 293.66477,
+    "file": "D4.wav",
+    "duration": 1.145,
+    "timbre": "bright"
+  },
+  {
+    "note": "E4",
+    "hz": 329.62756,
+    "file": "E4.wav",
+    "duration": 1.06,
+    "timbre": "bright"
+  }
+]

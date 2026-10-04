@@ -23,6 +23,7 @@
       <div class="header-controls">
         <button type="button" id="playBtn" class="primary">Play</button>
         <select id="preset" class="chrome-fade" aria-label="Presets"></select>
+        <span id="heatFlag" class="heat-flag" aria-live="polite">clean</span>
         <button type="button" id="toggleControls" class="ghost chrome-fade" title="Edit lab — E / Esc / H">Edit</button>
       </div>
     </header>
@@ -32,6 +33,51 @@
       <span class="badge" id="badgeMode">pendulum</span>
     </div>
 
+    <div class="look-row" id="gateLooks" hidden aria-label="Gate looks">
+      <span class="look-label">Looks</span>
+      <button type="button" data-look="glass" aria-pressed="false">Glass</button>
+      <button type="button" data-look="reflect" aria-pressed="false">Reflect</button>
+      <button type="button" data-look="clouds" aria-pressed="false">Clouds</button>
+      <button type="button" data-look="bugs" aria-pressed="false">Firebugs</button>
+      <button type="button" data-look="wake" aria-pressed="false">Wake</button>
+      <button type="button" data-look="gateGlass" aria-pressed="false">Ether</button>
+      <button type="button" data-look="cube" aria-pressed="false">Cube</button>
+    </div>
+
+
+    <div class="dial-row" id="dialRow" aria-label="Live dials">
+      <div class="dial" data-dial="bpm" role="slider" tabindex="0" aria-label="Speed" aria-valuemin="24" aria-valuemax="140" aria-valuenow="48">
+        <div class="dial-glow" aria-hidden="true"></div>
+        <div class="dial-face" aria-hidden="true"><div class="dial-needle"></div></div>
+        <span class="dial-name">Speed</span>
+        <span class="dial-read" id="dialBpmRead">48</span>
+      </div>
+      <div class="dial" data-dial="vol" role="slider" tabindex="0" aria-label="Volume" aria-valuemin="0" aria-valuemax="1" aria-valuenow="0.68">
+        <div class="dial-glow" aria-hidden="true"></div>
+        <div class="dial-face" aria-hidden="true"><div class="dial-needle"></div></div>
+        <span class="dial-name">Volume</span>
+        <span class="dial-read" id="dialVolRead">0.68</span>
+      </div>
+      <div class="dial" data-dial="feel" role="slider" tabindex="0" aria-label="Feel" aria-valuemin="0" aria-valuemax="100" aria-valuenow="74">
+        <div class="dial-glow" aria-hidden="true"></div>
+        <div class="dial-face" aria-hidden="true"><div class="dial-needle"></div></div>
+        <span class="dial-name">Feel</span>
+        <span class="dial-read" id="dialFeelRead">74</span>
+      </div>
+      <div class="dial" data-dial="path" role="slider" tabindex="0" aria-label="Path shape" aria-valuemin="0" aria-valuemax="4" aria-valuenow="0">
+        <div class="dial-glow" aria-hidden="true"></div>
+        <div class="dial-face" aria-hidden="true"><div class="dial-needle"></div></div>
+        <span class="dial-name">Path</span>
+        <span class="dial-read" id="dialPathRead">Auto</span>
+      </div>
+      <div class="dial" data-dial="wet" role="slider" tabindex="0" aria-label="Space" aria-valuemin="0" aria-valuemax="0.9" aria-valuenow="0.5">
+        <div class="dial-glow" aria-hidden="true"></div>
+        <div class="dial-face" aria-hidden="true"><div class="dial-needle"></div></div>
+        <span class="dial-name">Space</span>
+        <span class="dial-read" id="dialWetRead">0.50</span>
+      </div>
+    </div>
+
     <aside class="panel drawer" id="controlsPanel" aria-label="Master and voices">
       <div class="panel-sections">
         <section class="section">
@@ -39,6 +85,7 @@
           <div class="master-grid">
             <label class="field span2">Visual mode
               <select id="visualMode" aria-label="Visual mode">
+                <option value="gate" selected>Gate</option>
                 <option value="pendulum">Pendulum</option>
                 <option value="circular">Circular</option>
                 <option value="linear">Linear</option>
@@ -48,61 +95,61 @@
                 <option value="sineRibbons">Sine ribbons</option>
               </select>
             </label>
-            <label class="field">BPM <span class="val" id="bpmVal">48</span>
-              <input type="range" id="bpm" min="24" max="140" step="1" value="48" />
-            </label>
-            <label class="field">Master cycle (s)
-              <input type="number" id="masterCycle" min="1" max="60" step="0.5" value="8" />
-            </label>
-            <label class="field span2 chk" style="flex-direction:row;text-transform:none;letter-spacing:0;font-size:0.78rem">
-              <input type="checkbox" id="useBpm" checked /> Time from BPM (16 beats = cycle)
-            </label>
-            <label class="field">Master volume <span class="val" id="masterVolVal">0.68</span>
-              <input type="range" id="masterVol" min="0" max="1" step="0.01" value="0.68" />
-            </label>
-            <label class="field">Reverb wet <span class="val" id="reverbVal">0.50</span>
-              <input type="range" id="reverb" min="0" max="0.9" step="0.01" value="0.50" />
-            </label>
-            <label class="field">Delay wet <span class="val" id="delayVal">0.24</span>
-              <input type="range" id="delay" min="0" max="0.8" step="0.01" value="0.24" />
-            </label>
-            <label class="field chk" style="flex-direction:row;text-transform:none;letter-spacing:0;font-size:0.78rem;align-items:center">
-              <input type="checkbox" id="evolve" /> Evolve / ambient drift
-            </label>
-            <label class="field">Evolve rate
-              <input type="range" id="evolveRate" min="0.02" max="0.5" step="0.01" value="0.15" />
-            </label>
-
-            <label class="field span2">Master simplicity <span class="val" id="masterSimplicityVal">74 Soft</span>
-              <input type="range" id="masterSimplicity" min="0" max="100" step="1" value="74" />
-            </label>
-            <div class="toolbar-row span2" style="margin:0">
-              <button type="button" data-sim-preset="simple">Simple</button>
-              <button type="button" data-sim-preset="medium">Medium</button>
-              <button type="button" data-sim-preset="complex">Complex</button>
+          </div>
+          <div class="dial-sources" hidden>
+            <span class="val" id="bpmVal">48</span>
+            <input type="range" id="bpm" min="24" max="140" step="1" value="48" aria-label="BPM" />
+            <span class="val" id="masterVolVal">0.68</span>
+            <input type="range" id="masterVol" min="0" max="1" step="0.01" value="0.68" aria-label="Master volume" />
+            <span class="val" id="reverbVal">0.50</span>
+            <input type="range" id="reverb" min="0" max="0.9" step="0.01" value="0.50" aria-label="Reverb wet" />
+            <span class="val" id="masterSimplicityVal">74 Soft</span>
+            <input type="range" id="masterSimplicity" min="0" max="100" step="1" value="74" aria-label="Master simplicity" />
+          </div>
+          <details class="lab-more">
+            <summary>More</summary>
+            <div class="master-grid">
+              <label class="field">Master cycle (s)
+                <input type="number" id="masterCycle" min="1" max="60" step="0.5" value="8" />
+              </label>
+              <label class="field span2 chk" style="flex-direction:row;text-transform:none;letter-spacing:0;font-size:0.78rem">
+                <input type="checkbox" id="useBpm" checked /> Time from BPM (16 beats = cycle)
+              </label>
+              <label class="field">Delay wet <span class="val" id="delayVal">0.24</span>
+                <input type="range" id="delay" min="0" max="0.8" step="0.01" value="0.24" />
+              </label>
+              <label class="field chk" style="flex-direction:row;text-transform:none;letter-spacing:0;font-size:0.78rem;align-items:center">
+                <input type="checkbox" id="evolve" /> Evolve / ambient drift
+              </label>
+              <label class="field">Evolve rate
+                <input type="range" id="evolveRate" min="0.02" max="0.5" step="0.01" value="0.15" />
+              </label>
+              <div class="toolbar-row span2" style="margin:0">
+                <button type="button" data-sim-preset="simple">Simple</button>
+                <button type="button" data-sim-preset="medium">Medium</button>
+                <button type="button" data-sim-preset="complex">Complex</button>
+              </div>
+              <label class="field span2 chk" style="flex-direction:row;text-transform:none;letter-spacing:0;font-size:0.78rem;align-items:center">
+                <input type="checkbox" id="quadraticLength" /> Quadratic length (pendulum L ∝ T²)
+              </label>
+              <p class="hint span2" style="grid-column:1/-1">
+                Dials on stage own speed, volume, feel, path, and space. Simplicity thins beat density.
+                Quadratic length uses pendulum-wave math (longer = slower).
+              </p>
             </div>
-            <label class="field span2 chk" style="flex-direction:row;text-transform:none;letter-spacing:0;font-size:0.78rem;align-items:center">
-              <input type="checkbox" id="quadraticLength" /> Quadratic length (pendulum L ∝ T²)
-            </label>
-            <p class="hint span2" style="grid-column:1/-1">
-              Simplicity thins beat density and calms spacing — sparse lullaby vs busy polyrhythm.
-              Each voice also has its own simplicity slider. Quadratic length uses pendulum-wave math (longer = slower).
-            </p>
-          </div>
-
-          <h2 style="margin-top:0.85rem">Polyrhythm helper</h2>
-          <div class="ratio-box">
-            <input type="number" id="ratioA" min="1" max="24" value="3" aria-label="Ratio A" />
-            <span>:</span>
-            <input type="number" id="ratioB" min="1" max="24" value="2" aria-label="Ratio B" />
-            <button type="button" id="applyRatio">Apply A:B</button>
-          </div>
-          <p class="hint">Sets the first two voices to that beat ratio and tunes their simplicity from the master feel.</p>
-
-          <div class="toolbar-row" style="margin-top:0.75rem">
-            <button type="button" id="saveSetup">Save</button>
-            <button type="button" id="loadSetup">Load saved</button>
-          </div>
+            <h2 style="margin-top:0.85rem">Polyrhythm helper</h2>
+            <div class="ratio-box">
+              <input type="number" id="ratioA" min="1" max="24" value="3" aria-label="Ratio A" />
+              <span>:</span>
+              <input type="number" id="ratioB" min="1" max="24" value="2" aria-label="Ratio B" />
+              <button type="button" id="applyRatio">Apply A:B</button>
+            </div>
+            <p class="hint">Sets the first two voices to that beat ratio and tunes their simplicity from the master feel.</p>
+            <div class="toolbar-row" style="margin-top:0.75rem">
+              <button type="button" id="saveSetup">Save</button>
+              <button type="button" id="loadSetup">Load saved</button>
+            </div>
+          </details>
         </section>
 
         <section class="section">
@@ -115,6 +162,6 @@
       </div>
     </aside>
   </div>
-  <script src="app.js"></script>
+  <script src="app.js?v=20261004-looks2"></script>
 </body>
 </html>

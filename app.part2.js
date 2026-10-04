@@ -13,6 +13,36 @@
     return Math.max(20, Math.min(4000, v.hz));
   }
 
+  // gateSamples: nearest bank note by log frequency. Exact prefix notes land at
+  // playbackRate 1 because hz is NOTE_FREQ. Rates outside 0.8–1.25 are not stretched.
+  // Returns the stop offset in seconds, or 0 when the hit should use the oscillator.
+  function connectGateSample(g, now, vol, freq) {
+    let best = null;
+    let bestD = Infinity;
+    for (const note in gateSamples) {
+      const s = gateSamples[note];
+      if (!s || !s.buffer || !(s.hz > 0)) continue;
+      const d = Math.abs(Math.log(freq / s.hz));
+      if (d < bestD) {
+        bestD = d;
+        best = s;
+      }
+    }
+    if (!best) return 0;
+    const rate = freq / best.hz;
+    if (!(rate >= 0.8 && rate <= 1.25)) return 0;
+    const src = ctx.createBufferSource();
+    src.buffer = best.buffer;
+    src.playbackRate.setValueAtTime(rate, now);
+    src.connect(g);
+    g.gain.setValueAtTime(0, now);
+    g.gain.linearRampToValueAtTime(vol, now + 0.004);
+    const stopAt = best.buffer.duration / rate + 0.02;
+    src.start(now);
+    src.stop(now + stopAt);
+    return stopAt;
+  }
+
   function playVoiceHit(v, when, densityGain = 1) {
     if (v.mute || !ctx) return;
     const freq = resolveFreq(v);
@@ -36,7 +66,16 @@
     const now = when;
     let srcEnd = now + 1.2;
 
-    if (wave === "noise") {
+    // sine, triangle, bell, pad: the gateSamples buffer replaces the oscillator.
+    // noise and kick stay below. saw and square stay on the oscillator branch.
+    let sampleStop = 0;
+    if (wave === "sine" || wave === "triangle" || wave === "bell" || wave === "pad") {
+      sampleStop = connectGateSample(g, now, vol, freq);
+    }
+
+    if (sampleStop > 0) {
+      srcEnd = now + sampleStop;
+    } else if (wave === "noise") {
       const len = Math.floor(ctx.sampleRate * 0.18);
       const buf = ctx.createBuffer(1, len, ctx.sampleRate);
       const d = buf.getChannelData(0);

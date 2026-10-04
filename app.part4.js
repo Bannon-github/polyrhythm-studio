@@ -5,14 +5,20 @@
       simplicity: partial.simplicity ?? 50, // 0 complex … 100 simple/sparse
       _flash: 0,
       _nextHitTransport: null,
+      _nextGateAfter: null,
       _beatIndex: 0,
       _lastHitAt: -999,
+      _pitch01: 0,
+      _pitchBand: "mid",
     };
+    publishPitchHint(voice);
+    return voice;
   }
 
   function resetVoiceSchedulers() {
     state.voices.forEach((v) => {
       v._nextHitTransport = null;
+      v._nextGateAfter = null;
       v._beatIndex = 0;
     });
   }
@@ -26,7 +32,7 @@
       delayWet: 0.24,
       evolve: true,
       evolveRate: 0.08,
-      visualMode: "pendulum",
+      visualMode: "gate",
       quadraticLength: true,
       voices: [
         { name: "High", beatsInCycle: 5, note: "G4", waveform: "bell", volume: 0.18, simplicity: 78, pan: 0.40, color: COLORS[0] },

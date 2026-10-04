@@ -16,10 +16,14 @@
     else if (mode === "triangles") drawTriangles(g, w, h, transport);
     else if (mode === "waves") drawWaves(g, w, h, transport);
     else if (mode === "sineRibbons") drawSineRibbons(g, w, h, transport);
+    else if (mode === "gate") drawGate(g, w, h, transport);
     else drawPendulum(g, w, h, transport);
 
     // decay flashes
-    state.voices.forEach((v) => { v._flash = Math.max(0, (v._flash || 0) - 0.028); }); // soft brightness pulse decay
+    state.voices.forEach((v) => {
+      v._flash = Math.max(0, (v._flash || 0) - 0.028); // soft brightness pulse decay
+      if (v._flash === 0) { v._flashX = null; v._flashY = null; }
+    });
 
     $("#badgeTime").textContent = formatTime(transport);
     $("#badgeMode").textContent = state.visualMode;
@@ -70,9 +74,11 @@
         // Prefer period mapping when available
         len = maxLen * (0.36 + 0.6 * (period / (period + 2.2)));
       }
-      // Fan spread: rest angle fans outward from center
-      const fan = ((i + 0.5) / n - 0.5) * (Math.PI * 0.42);
+      // Fan spread: rest angle fans outward, but |fan| < amp so every bob crosses cx
       const amp = (0.42 + (1 - s) * 0.28) * (Math.PI / 3.2);
+      let fan = ((i + 0.5) / n - 0.5) * (Math.PI * 0.42);
+      const fanLimit = amp * 0.85; // margin so ang always passes through 0
+      if (Math.abs(fan) > fanLimit) fan = Math.sign(fan) * fanLimit;
       const ang = fan + pendulumAngle(v, t) * amp;
       const x1 = cx + Math.sin(ang) * len;
       const y1 = originY + Math.cos(ang) * len;

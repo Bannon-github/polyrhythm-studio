@@ -34,7 +34,9 @@
       evolveRate: state.evolveRate,
       masterSimplicity: state.masterSimplicity,
       visualMode: state.visualMode,
+      gateLooks: Object.assign({}, state.gateLooks),
       quadraticLength: state.quadraticLength,
+      activePreset: state.activePreset || "",
       voices: state.voices.map((v) => ({
         name: v.name,
         beatsInCycle: v.beatsInCycle,
@@ -50,6 +52,8 @@
         pan: v.pan,
         phase: v.phase,
         simplicity: v.simplicity,
+        pathKind: v.pathKind || "",
+        pathId: v.pathId || "",
       })),
     };
   }
@@ -66,9 +70,21 @@
       evolve: !!data.evolve,
       evolveRate: data.evolveRate ?? state.evolveRate,
       masterSimplicity: data.masterSimplicity ?? 50,
-      visualMode: data.visualMode || "pendulum",
+      visualMode: data.visualMode || "gate",
       quadraticLength: !!data.quadraticLength,
     });
+    const looks = data.gateLooks || {};
+    state.gateLooks = {
+      glass: !!looks.glass,
+      reflect: !!looks.reflect,
+      clouds: !!looks.clouds,
+      bugs: !!looks.bugs,
+      wake: !!looks.wake,
+      gateGlass: !!looks.gateGlass,
+      cube: !!looks.cube,
+    };
+    const savedPreset = data.activePreset || "";
+    state.activePreset = (savedPreset && PRESETS[savedPreset]) ? savedPreset : "";
     state.nextVoiceId = 1;
     state.voices = (data.voices || []).map((v) => makeVoice(v));
     if (!state.voices.length) applyPreset("3:2 classic");
@@ -104,7 +120,8 @@
     $("#evolveRate").value = state.evolveRate;
     $("#masterSimplicity").value = state.masterSimplicity;
     $("#masterSimplicityVal").textContent = simplicityLabel(state.masterSimplicity);
-    $("#preset").value = "";
+    const presetEl = $("#preset");
+    if (presetEl) presetEl.value = state.activePreset || "";
     const modeSel = $("#visualMode");
     if (modeSel) modeSel.value = state.visualMode;
     const qLen = $("#quadraticLength");
@@ -112,3 +129,10 @@
     document.querySelectorAll("[data-mode]").forEach((btn) => {
       btn.classList.toggle("active", btn.dataset.mode === state.visualMode);
     });
+    document.querySelectorAll("[data-look]").forEach((btn) => {
+      const on = !!(state.gateLooks && state.gateLooks[btn.dataset.look]);
+      btn.classList.toggle("active", on);
+      btn.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+    const lookRow = $("#gateLooks");
+    if (lookRow) lookRow.hidden = state.visualMode !== "gate";

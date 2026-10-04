@@ -21,31 +21,43 @@
     return pauseAccum + (ctx.currentTime - transportStart);
   }
 
+  // Gate frames own the tone. drawGate writes v._gateSide = Math.sign(orbX - gx)
+  // and then calls this, before it paints orbs, so _flash is set on that frame.
+  // 0 is the sample on the line, not a hit. Same side again is not a second hit.
+  // Any other visual mode must not call playVoiceHit.
+  function onGateSideSample(v, side) {
+    if (state.visualMode !== "gate") {
+      v._gateSideSeen = null;
+      return false;
+    }
+    if (side !== -1 && side !== 1) return false;
+    const prev = v._gateSideSeen;
+    v._gateSideSeen = side;
+    if (prev !== -1 && prev !== 1) return false;
+    if (prev === side) return false;
+    if (!state.playing || !ctx) return false;
+    publishPitchHint(v);
+    playVoiceHit(v, ctx.currentTime + 0.003, 1);
+    return true;
+  }
+
+  // 0 = low (around C2), 1 = high (around C5). Visuals can map color and brightness.
+  function publishPitchHint(v) {
+    const freq = Math.max(20, resolveFreq(v));
+    const t01 = Math.log(freq / 65.41) / Math.log(523.25 / 65.41);
+    v._pitch01 = Math.max(0, Math.min(1, t01));
+    v._pitchBand = v._pitch01 < 0.34 ? "low" : v._pitch01 < 0.67 ? "mid" : "high";
+  }
+
   function schedule() {
     if (!state.playing || !ctx) return;
-    const now = ctx.currentTime;
-    const transportNow = pauseAccum + (now - transportStart);
-
-    state.voices.forEach((v) => {
-      if (v.mute) return;
-      const period = voicePeriodSec(v);
-      if (v._nextHitTransport == null) {
-        const phase = (v.phase || 0) * period;
-        const n = Math.max(0, Math.ceil((transportNow - phase) / period));
-        v._nextHitTransport = n * period + phase;
-        v._beatIndex = n;
-      }
-      while (v._nextHitTransport <= transportNow + SCHEDULE_AHEAD) {
-        const whenAudio = transportStart + (v._nextHitTransport - pauseAccum);
-        if (whenAudio >= now - 0.01) {
-          const gate = shouldFireHit(v, v._beatIndex || 0);
-          if (gate.fire) playVoiceHit(v, Math.max(whenAudio, now + 0.003), gate.densityGain);
-        }
-        v._beatIndex = (v._beatIndex || 0) + 1;
-        v._nextHitTransport += period;
-      }
-    });
-    lastSched = now;
+    // Timer stays up so the clock keeps ticking. It must not invent notes.
+    if (state.visualMode !== "gate") {
+      state.voices.forEach((v) => {
+        v._nextGateAfter = null;
+        v._gateSideSeen = null;
+      });
+    }
   }
 
   function startScheduler() {
@@ -95,7 +107,7 @@
   function makeVoice(partial = {}) {
     const id = state.nextVoiceId++;
     const color = partial.color || COLORS[(id - 1) % COLORS.length];
-    return {
+    const voice = {
       id,
       name: partial.name || `Voice ${id}`,
       beatsInCycle: partial.beatsInCycle ?? 3,
@@ -104,5 +116,7 @@
       pitchMode: partial.pitchMode || "note",
       note: partial.note || "C4",
       hz: partial.hz ?? 261.63,
+      pathKind: partial.pathKind || "",
+      pathId: partial.pathId || "",
       waveform: partial.waveform || "sine",
       volume: partial.volume ?? 0.55,

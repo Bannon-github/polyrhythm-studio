@@ -52,20 +52,44 @@
     delayFilter.connect(delayNode);
     delayNode.connect(delayGain);
 
-    // Mix bus → masterGain → soft sat → soft limiter → destination
+    // Mix bus → masterGain → soft sat → soft limiter → ease → destination
+    easeGain = ctx.createGain();
+    easeGain.gain.value = 1;
+    hotAnalyser = ctx.createAnalyser();
+    hotAnalyser.fftSize = 2048;
+    hotAnalyser.smoothingTimeConstant = 0;
+    hotBuf = new Float32Array(hotAnalyser.fftSize);
+
     dryGain.connect(masterGain);
     convolver.connect(reverbGain);
     reverbGain.connect(masterGain);
     delayGain.connect(masterGain);
     masterGain.connect(softSat);
     softSat.connect(softLimiter);
-    softLimiter.connect(ctx.destination);
+    softLimiter.connect(easeGain);
+    easeGain.connect(ctx.destination);
+    easeGain.connect(hotAnalyser);
 
     // also feed delay/reverb from dry path via send
     dryGain.connect(convolver);
     dryGain.connect(delayNode);
 
     state.audioReady = true;
+    loadGateSamples();
+  }
+
+  // Non-blocking. A failed fetch leaves that note out of gateSamples so the hit
+  // falls back to the oscillator instead of going silent.
+  function loadGateSamples() {
+    const notes = ["C2", "C3", "D3", "E3", "G3", "A3", "C4", "D4", "E4"];
+    notes.forEach((note) => {
+      fetch("samples/gate/" + note + ".wav").then((r) => {
+        if (!r.ok) throw new Error(note);
+        return r.arrayBuffer();
+      }).then((ab) => ctx.decodeAudioData(ab)).then((buffer) => {
+        gateSamples[note] = { note: note, hz: NOTE_FREQ[note], buffer: buffer };
+      }).catch(() => {});
+    });
   }
 
   function voicePeriodSec(v) {

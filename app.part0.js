@@ -8,7 +8,7 @@
   // ---------- Constants ----------
   const MAX_VOICES = 12;
   const LOOKAHEAD = 0.08;
-  const SCHEDULE_AHEAD = 0.12;
+  const SCHEDULE_AHEAD = 1.5;
   const NOTES = [
     "C1","D1","E1","F1","G1","A1","B1",
     "C2","D2","E2","F2","G2","A2","B2",
@@ -39,7 +39,9 @@
   const state = {
     playing: false,
     controlsHidden: true, // immersive: lab drawer collapsed by default
-    visualMode: "pendulum", // pendulum | circular | linear | mandala | triangles | waves | sineRibbons
+    visualMode: "gate", // gate | pendulum | circular | linear | mandala | triangles | waves | sineRibbons
+    // Optional Gate looks. Shared line is always glass. These stay off until chosen.
+    gateLooks: { glass: false, reflect: false, clouds: false, bugs: false, wake: false, gateGlass: false, cube: false },
     quadraticLength: false, // pendulum length ∝ period²
     bpm: 48,
     masterCycleSec: 8,
@@ -53,6 +55,7 @@
     voices: [],
     nextVoiceId: 1,
     audioReady: false,
+    activePreset: "",
   };
 
   // ---------- Audio ----------
@@ -65,12 +68,17 @@
   let convolver = null;
   let softSat = null;
   let softLimiter = null;
+  let easeGain = null;
+  let hotAnalyser = null;
+  let hotBuf = null;
   let schedulerTimer = null;
   let transportStart = 0; // audio time when play began
   let visualOrigin = 0;   // performance.now() at play
   let pauseAccum = 0;
   let autoHideTimer = null;
   let lastSched = 0;
+  // Gate sample bank: note -> { note, hz, buffer }. Empty until loadGateSamples finishes.
+  let gateSamples = Object.create(null);
 
   function makeImpulse(seconds = 4.25, decay = 3.0) {
     const rate = ctx.sampleRate;

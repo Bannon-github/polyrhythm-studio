@@ -7,6 +7,7 @@
       tbtn.textContent = state.controlsHidden ? "Edit" : "Hide";
       tbtn.classList.toggle("active", !state.controlsHidden);
     }
+    syncDialReadouts();
   }
 
   function simplicityLabel(n) {
