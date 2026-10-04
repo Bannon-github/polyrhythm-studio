@@ -42,6 +42,18 @@
     visualMode: "gate", // gate | pendulum | circular | linear | mandala | triangles | waves | sineRibbons
     // Optional Gate looks. Shared line is always glass. These stay off until chosen.
     gateLooks: { glass: false, reflect: false, clouds: false, bugs: false, wake: false, gateGlass: false, cube: false },
+    // Circular Rhythm machine (own layout — not a Gate look). Mode id: circular.
+    circularRings: 8,   // 1..8 — first N inner rings (index 0 = innermost / highest)
+    circularChord: 0,   // index into C, Am, Em, G5, D5, C5
+    circularZoom: 1,    // machine-only zoom (pull back / move in)
+    circularLine: true, // magic-line dial. Visuals owns the control. Off means no hit.
+    // Layout Visuals can read without parsing the preset. Index 0 is innermost / highest.
+    circularRhythm: {
+      progression: "C",
+      chordIndex: 0,
+      ringCount: 8,
+      notes: ["E4", "C4", "G3", "E3", "C3", "C2", "C2", "C2"],
+    },
     quadraticLength: false, // pendulum length ∝ period²
     bpm: 48,
     masterCycleSec: 8,
@@ -79,6 +91,8 @@
   let lastSched = 0;
   // Gate sample bank: note -> { note, hz, buffer }. Empty until loadGateSamples finishes.
   let gateSamples = Object.create(null);
+  // Cube face bank. Separate from the mallet map. Empty until loadCubeSamples finishes.
+  let cubeSamples = Object.create(null);
 
   function makeImpulse(seconds = 4.25, decay = 3.0) {
     const rate = ctx.sampleRate;

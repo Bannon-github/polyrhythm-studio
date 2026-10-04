@@ -658,3 +658,32 @@ body:not(.controls-hidden) .dial-row {
   box-shadow: 0 0 10px rgba(126, 200, 255, 0.28);
   color: #e8f4ff;
 }
+
+
+/* Circular Rhythm machine dials — same language as stage dials */
+.circular-dials {
+  bottom: max(5.6rem, env(safe-area-inset-bottom, 0px) + 5.2rem);
+  z-index: 29;
+}
+body:not(.controls-hidden) .circular-dials {
+  bottom: calc(var(--drawer-h) + 4.85rem);
+}
+.circular-dials[hidden] { display: none !important; }
+.dial-row[hidden] { display: none !important; }
+/* One stage panel: machine rows never stack. Chord/Rings live only on Circular. */
+body.mode-circular #dialRow,
+body.mode-cubes #dialRow { display: none !important; }
+body:not(.mode-circular) #circularDials { display: none !important; }
+body:not(.mode-cubes) #cubeDials { display: none !important; }
+body:not(.mode-gate) #gateLooks { display: none !important; }
+#dialRow .dial[data-dial="chord"],
+#dialRow .dial[data-dial="rings"] { display: none !important; }
+
+body.mode-circular .dial-row:not(.circular-dials) .dial[data-dial="path"] {
+  display: none;
+}
+
+/* Cube machine controls — own row, hidden unless visualMode is cubes */
+.cube-dials { top: 4.35rem; }
+.cube-dials[hidden] { display: none !important; }
+#cubeNestRead { min-width: 4.5rem; text-align: center; }

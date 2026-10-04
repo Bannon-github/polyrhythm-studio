@@ -3,7 +3,7 @@
   try {
     const n = 16;
     const parts = await Promise.all([...Array(n).keys()].map(i =>
-      fetch("app.part" + i + ".js?v=20261004-looks2", { cache: "no-store" }).then(r => {
+      fetch("app.part" + i + ".js?v=20261004-cubekiln", { cache: "no-store" }).then(r => {
         if (!r.ok) throw new Error("part" + i + " HTTP " + r.status);
         return r.text();
       })

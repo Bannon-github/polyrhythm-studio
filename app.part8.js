@@ -8,6 +8,7 @@
       tbtn.classList.toggle("active", !state.controlsHidden);
     }
     syncDialReadouts();
+    if (typeof syncCubeChrome === "function") syncCubeChrome();
   }
 
   function simplicityLabel(n) {

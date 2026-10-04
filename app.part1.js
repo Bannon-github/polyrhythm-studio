@@ -76,6 +76,7 @@
 
     state.audioReady = true;
     loadGateSamples();
+    loadCubeSamples();
   }
 
   // Non-blocking. A failed fetch leaves that note out of gateSamples so the hit
@@ -88,6 +89,20 @@
         return r.arrayBuffer();
       }).then((ab) => ctx.decodeAudioData(ab)).then((buffer) => {
         gateSamples[note] = { note: note, hz: NOTE_FREQ[note], buffer: buffer };
+      }).catch(() => {});
+    });
+  }
+
+  // Same non-blocking fetch as the mallets, into cubeSamples only.
+  // Notes are the ones installCubeVoices already assigns (CUBE_NOTES_HI).
+  function loadCubeSamples() {
+    const notes = ["C2", "G2", "B2", "C3", "D3", "E3", "G3", "A3", "B3", "C4", "D4", "E4"];
+    notes.forEach((note) => {
+      fetch("samples/cubes/" + note + ".wav").then((r) => {
+        if (!r.ok) throw new Error(note);
+        return r.arrayBuffer();
+      }).then((ab) => ctx.decodeAudioData(ab)).then((buffer) => {
+        cubeSamples[note] = { note: note, hz: NOTE_FREQ[note], buffer: buffer };
       }).catch(() => {});
     });
   }

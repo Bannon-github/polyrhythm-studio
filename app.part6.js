@@ -126,7 +126,154 @@
         { name: "Fifth B", pathId: "fifth", pathKind: "line", beatsInCycle: 3, note: "D4", waveform: "sine", volume: 0.15, simplicity: 78, pan: 0.18, phase: 0.25 },
       ],
     }),
+    "Circular Rhythm": () => {
+      const base = 240 / 48;
+      const notes = ["E4", "C4", "G3", "E3", "C3", "C2", "C2", "C2"];
+      return {
+        bpm: 48,
+        useBpm: true,
+        masterSimplicity: 74,
+        reverbWet: 0.42,
+        delayWet: 0.16,
+        evolve: false,
+        evolveRate: 0.08,
+        visualMode: "circular",
+        voices: notes.map((note, i) => ({
+          name: "Ring " + i,
+          beatsInCycle: i + 1,
+          usePeriod: true,
+          periodSec: base * (i + 1),
+          pitchMode: "note",
+          note,
+          pathKind: "circle",
+          pathId: "ring-" + i,
+          waveform: "sine",
+          volume: 0.14 + (0.18 * i) / 7,
+          simplicity: 80,
+          phase: 0,
+          pan: 0,
+        })),
+      };
+    },
   };
+
+  // Circular Rhythm. One note per ring, index 0 innermost / highest.
+  // Only sample-bank notes, so connectGateSample plays the wav at rate 1.
+  // Real chords, index 0 = innermost / highest. Bank notes only.
+  // Outer rings repeat the lowest chord tone so pitch never rises.
+  const CIRC_PROGRESSIONS = ["C", "Am", "Em", "G5", "D5", "C5"];
+  const CIRC_PROGRESSION_LABEL = { C: "C", Am: "Am", Em: "Em", G5: "G5", D5: "D5", C5: "C5" };
+  const CIRC_LEGACY = { open: "C", turnaround: "Am", fifths: "G5" };
+  const CIRC_CHORDS = {
+    C:  ["E4", "C4", "G3", "E3", "C3", "C2", "C2", "C2"],
+    Am: ["E4", "C4", "A3", "E3", "C3", "C2", "C2", "C2"],
+    Em: ["E4", "G3", "E3", "E3", "E3", "E3", "E3", "E3"],
+    G5: ["D4", "G3", "D3", "D3", "D3", "D3", "D3", "D3"],
+    D5: ["D4", "A3", "D3", "D3", "D3", "D3", "D3", "D3"],
+    C5: ["C4", "G3", "C3", "C2", "C2", "C2", "C2", "C2"],
+  };
+  function circNormalizeProgression(p) {
+    if (CIRC_CHORDS[p]) return p;
+    if (CIRC_LEGACY[p]) return CIRC_LEGACY[p];
+    return "C";
+  }
+
+  function circularRhythmPeriod() {
+    return 240 / Math.max(20, state.bpm);
+  }
+
+  // Shared orbital speed, not a shared period. Radius grows as (index + 1),
+  // so the lap time does too. Ring 0 is the inner lap. Phase stays 0.
+  function circularRingPeriod(i) {
+    return circularRhythmPeriod() * ((i | 0) + 1);
+  }
+
+  function circularRhythmVolume(i) {
+    return 0.14 + (0.18 * i) / 7;
+  }
+
+  function circularRhythmFullNotes(progression, chordIndex) {
+    return CIRC_CHORDS[circNormalizeProgression(progression)];
+  }
+
+  function circularMachineLive() {
+    return state.visualMode === "circular" && state.activePreset === "Circular Rhythm" && !!state.circularRhythm;
+  }
+
+  function publishCircularRhythm(progression, chordIndex, ringCount) {
+    const full = circularRhythmFullNotes(progression, chordIndex);
+    const notes = full.slice(0, ringCount);
+    const progIndex = Math.max(0, CIRC_PROGRESSIONS.indexOf(progression));
+    state.circularRhythm = {
+      progression: progression,
+      chordIndex: chordIndex,
+      ringCount: ringCount,
+      notes: notes.slice(),
+    };
+    state.circularRings = ringCount;
+    state.circularChord = progIndex;
+  }
+
+  // Retarget in place. Rings that stay keep _gateSideSeen.
+  // The drawer's ensure step rebuilds whenever there are fewer than 3 voices,
+  // which would wipe the side and the notes. Below 3, the extra slots stay in
+  // the list muted so only ringCount is heard. circularRings stays the real count.
+  function installCircularVoices(progression, chordIndex, ringCount) {
+    ringCount = Math.max(1, Math.min(8, ringCount | 0));
+    const full = circularRhythmFullNotes(progression, chordIndex);
+    const slots = Math.max(ringCount, 3);
+    while (state.voices.length > slots) state.voices.pop();
+    for (let i = 0; i < slots; i++) {
+      const audible = i < ringCount;
+      const fields = {
+        name: "Ring " + i,
+        note: full[i],
+        volume: circularRhythmVolume(i),
+        pathKind: "circle",
+        pathId: "ring-" + i,
+        waveform: "sine",
+        pitchMode: "note",
+        phase: 0,
+        usePeriod: true,
+        periodSec: circularRingPeriod(i),
+        beatsInCycle: i + 1,
+        mute: !audible,
+      };
+      if (state.voices[i]) {
+        const staying = audible && state.voices[i].pathId === "ring-" + i && !state.voices[i].mute;
+        Object.assign(state.voices[i], fields);
+        if (!staying) state.voices[i]._gateSideSeen = null;
+        publishPitchHint(state.voices[i]);
+      } else {
+        state.voices.push(makeVoice(fields));
+      }
+    }
+    publishCircularRhythm(progression, chordIndex, ringCount);
+  }
+
+  // Chord change: note only. No hit, and the remembered side stays.
+  function touchCircularNotesOnly(progression, chordIndex) {
+    const n = Math.max(1, Math.min(8, (state.circularRhythm && state.circularRhythm.ringCount) || state.voices.length || 1));
+    const full = circularRhythmFullNotes(progression, chordIndex);
+    for (let i = 0; i < n && i < state.voices.length; i++) {
+      if (state.voices[i].note !== full[i]) {
+        state.voices[i].note = full[i];
+        publishPitchHint(state.voices[i]);
+      }
+    }
+    publishCircularRhythm(progression, chordIndex, n);
+  }
+
+  function advanceCircularTurnaround() {
+    const cr = state.circularRhythm;
+    if (!cr || cr.progression !== "turnaround") return;
+    if (!circularMachineLive()) return;
+    const bar = circularRhythmPeriod();
+    const idx = Math.floor(transportTime() / bar) % 3;
+    if (idx === cr.chordIndex) return;
+    touchCircularNotesOnly("turnaround", idx);
+    if (typeof renderVoiceList === "function") renderVoiceList();
+  }
 
   function applyPreset(name) {
     const factory = PRESETS[name];
@@ -145,6 +292,7 @@
     state.nextVoiceId = 1;
     state.voices = (p.voices || []).map((v) => makeVoice(v));
     state.voices.forEach(publishPitchHint);
+    if (name === "Circular Rhythm") publishCircularRhythm("C", 0, state.voices.length);
     if (ctx) {
       reverbGain.gain.value = state.reverbWet;
       delayGain.gain.value = state.delayWet;

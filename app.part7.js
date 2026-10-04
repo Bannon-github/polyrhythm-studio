@@ -35,6 +35,11 @@
       masterSimplicity: state.masterSimplicity,
       visualMode: state.visualMode,
       gateLooks: Object.assign({}, state.gateLooks),
+      circularRings: state.circularRings,
+      circularChord: state.circularChord,
+      circularZoom: state.circularZoom,
+      circularLine: state.circularLine !== false,
+      circularRhythm: state.circularRhythm ? Object.assign({}, state.circularRhythm, { notes: (state.circularRhythm.notes || []).slice() }) : undefined,
       quadraticLength: state.quadraticLength,
       activePreset: state.activePreset || "",
       voices: state.voices.map((v) => ({
@@ -71,8 +76,23 @@
       evolveRate: data.evolveRate ?? state.evolveRate,
       masterSimplicity: data.masterSimplicity ?? 50,
       visualMode: data.visualMode || "gate",
+      circularRings: Math.max(3, Math.min(8, data.circularRings ?? state.circularRings ?? 8)),
+      circularChord: Math.max(0, Math.min(5, data.circularChord ?? state.circularChord ?? 0)),
+      circularZoom: Math.max(0.45, Math.min(1.85, data.circularZoom ?? state.circularZoom ?? 1)),
+      circularLine: data.circularLine === false ? false : true,
       quadraticLength: !!data.quadraticLength,
     });
+    if (data.circularRhythm && typeof data.circularRhythm === "object") {
+      state.circularRhythm = {
+        progression: (typeof circNormalizeProgression === "function" ? circNormalizeProgression(data.circularRhythm.progression) : (data.circularRhythm.progression || "C")),
+        chordIndex: data.circularRhythm.chordIndex || 0,
+        ringCount: Math.max(1, Math.min(8, data.circularRhythm.ringCount || 8)),
+        notes: Array.isArray(data.circularRhythm.notes) ? data.circularRhythm.notes.slice() : [],
+      };
+      state.circularRings = state.circularRhythm.ringCount;
+      const pi = (typeof CIRC_PROGRESSIONS !== "undefined" ? CIRC_PROGRESSIONS : ["C","Am","Em","G5","D5","C5"]).indexOf(state.circularRhythm.progression);
+      if (pi >= 0) state.circularChord = pi;
+    }
     const looks = data.gateLooks || {};
     state.gateLooks = {
       glass: !!looks.glass,
@@ -134,5 +154,24 @@
       btn.classList.toggle("active", on);
       btn.setAttribute("aria-pressed", on ? "true" : "false");
     });
+    const mode = state.visualMode;
+    document.body.classList.toggle("mode-circular", mode === "circular");
+    document.body.classList.toggle("mode-cubes", mode === "cubes");
+    document.body.classList.toggle("mode-gate", mode === "gate");
     const lookRow = $("#gateLooks");
-    if (lookRow) lookRow.hidden = state.visualMode !== "gate";
+    if (lookRow) lookRow.hidden = mode !== "gate";
+    const circRow = $("#circularDials");
+    if (circRow) circRow.hidden = mode !== "circular";
+    const cubeRow = $("#cubeDials");
+    if (cubeRow) cubeRow.hidden = mode !== "cubes";
+    const dialRow = $("#dialRow");
+    // Circular and Cube own the stage. Gate and other modes keep the shared dials.
+    if (dialRow) dialRow.hidden = mode === "circular" || mode === "cubes";
+    document.querySelectorAll("#dialRow [data-dial='chord'], #dialRow [data-dial='rings']").forEach((el) => {
+      el.hidden = true;
+    });
+    // When Circular is selected, keep voices on ring pathIds
+    if (state.visualMode === "circular" && typeof ensureCircularMachine === "function") {
+      ensureCircularMachine();
+    }
+    if (typeof syncCircularDialReadouts === "function") syncCircularDialReadouts();

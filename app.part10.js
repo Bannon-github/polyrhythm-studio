@@ -9,6 +9,7 @@
 
     const transport = state.playing ? transportTime() : pauseAccum;
     const mode = state.visualMode;
+    if (typeof syncCubeChrome === "function") syncCubeChrome();
     if (mode === "pendulum") drawPendulum(g, w, h, transport);
     else if (mode === "circular") drawCircular(g, w, h, transport);
     else if (mode === "linear") drawLinear(g, w, h, transport);
@@ -16,6 +17,7 @@
     else if (mode === "triangles") drawTriangles(g, w, h, transport);
     else if (mode === "waves") drawWaves(g, w, h, transport);
     else if (mode === "sineRibbons") drawSineRibbons(g, w, h, transport);
+    else if (mode === "cubes") drawCubes(g, w, h, transport);
     else if (mode === "gate") drawGate(g, w, h, transport);
     else drawPendulum(g, w, h, transport);
 

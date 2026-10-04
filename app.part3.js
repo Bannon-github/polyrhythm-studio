@@ -21,13 +21,28 @@
     return pauseAccum + (ctx.currentTime - transportStart);
   }
 
-  // Gate frames own the tone. drawGate writes v._gateSide = Math.sign(orbX - gx)
-  // and then calls this, before it paints orbs, so _flash is set on that frame.
-  // 0 is the sample on the line, not a hit. Same side again is not a second hit.
-  // Any other visual mode must not call playVoiceHit.
+  // Gate, Circular, and Cubes frames own the tone. Their draws write
+  // v._gateSide = Math.sign(orbX - gx) then call this before paint so _flash
+  // lands on that frame. 0 is on the line, not a hit. Same side again is not
+  // a second hit. Other visual modes must not call playVoiceHit.
+  // A dial tick jumps phase (tempo) or the line. That is not a meeting.
+  // Hold crossings quiet until the frame after the tick has latched the new side.
+  let crossingsQuiet = false;
+  function quietCrossings() { crossingsQuiet = true; }
+  function releaseCrossings() { crossingsQuiet = false; }
+
   function onGateSideSample(v, side) {
-    if (state.visualMode !== "gate") {
+    if (state.visualMode !== "gate" && state.visualMode !== "circular" && state.visualMode !== "cubes") {
       v._gateSideSeen = null;
+      return false;
+    }
+    if (crossingsQuiet) {
+      if (side === -1 || side === 1) v._gateSideSeen = side;
+      return false;
+    }
+    // Line dial off: remember the side so turning it back on does not false-trigger.
+    if (state.visualMode === "circular" && state.circularLine === false) {
+      if (side === -1 || side === 1) v._gateSideSeen = side;
       return false;
     }
     if (side !== -1 && side !== 1) return false;
@@ -51,8 +66,10 @@
 
   function schedule() {
     if (!state.playing || !ctx) return;
+    // Turnaround steps the note with the bar. It does not call playVoiceHit.
+    if (typeof advanceCircularTurnaround === "function") advanceCircularTurnaround();
     // Timer stays up so the clock keeps ticking. It must not invent notes.
-    if (state.visualMode !== "gate") {
+    if (state.visualMode !== "gate" && state.visualMode !== "circular" && state.visualMode !== "cubes") {
       state.voices.forEach((v) => {
         v._nextGateAfter = null;
         v._gateSideSeen = null;

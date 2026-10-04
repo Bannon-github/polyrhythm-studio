@@ -13,14 +13,16 @@
     return Math.max(20, Math.min(4000, v.hz));
   }
 
-  // gateSamples: nearest bank note by log frequency. Exact prefix notes land at
+  // Nearest note in one bank by log frequency. Exact bank notes land at
   // playbackRate 1 because hz is NOTE_FREQ. Rates outside 0.8–1.25 are not stretched.
+  // bank is either gateSamples or cubeSamples, never both.
   // Returns the stop offset in seconds, or 0 when the hit should use the oscillator.
-  function connectGateSample(g, now, vol, freq) {
+  function connectGateSample(g, now, vol, freq, bank) {
+    if (!bank) return 0;
     let best = null;
     let bestD = Infinity;
-    for (const note in gateSamples) {
-      const s = gateSamples[note];
+    for (const note in bank) {
+      const s = bank[note];
       if (!s || !s.buffer || !(s.hz > 0)) continue;
       const d = Math.abs(Math.log(freq / s.hz));
       if (d < bestD) {
@@ -66,11 +68,14 @@
     const now = when;
     let srcEnd = now + 1.2;
 
-    // sine, triangle, bell, pad: the gateSamples buffer replaces the oscillator.
+    // sine, triangle, bell, pad: one sample bank replaces the oscillator.
+    // Cube faces use the wood-block map. Gate and Circular stay on the mallets.
     // noise and kick stay below. saw and square stay on the oscillator branch.
     let sampleStop = 0;
     if (wave === "sine" || wave === "triangle" || wave === "bell" || wave === "pad") {
-      sampleStop = connectGateSample(g, now, vol, freq);
+      const cubeHit = state.visualMode === "cubes" || String(v.pathId || "").indexOf("cube-") === 0;
+      if (cubeHit) sampleStop = connectGateSample(g, now, vol, freq, cubeSamples);
+      else sampleStop = connectGateSample(g, now, vol, freq, gateSamples);
     }
 
     if (sampleStop > 0) {

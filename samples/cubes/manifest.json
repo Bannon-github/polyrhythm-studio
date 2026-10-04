@@ -1,0 +1,106 @@
+{
+  "timbre": "dry hollow wood-block / muted box tap; tiny high click on the attack and a short body; darker on low notes, tighter and brighter on high notes. Not a soft mallet.",
+  "peak": 0.42,
+  "rate": 48000,
+  "channels": 1,
+  "bitDepth": 24,
+  "durations": "shorter as pitch rises",
+  "notes": [
+    {
+      "note": "C2",
+      "hz": 65.40639,
+      "file": "C2.wav",
+      "duration": 0.43,
+      "timbre": "dark",
+      "peak": 0.42
+    },
+    {
+      "note": "G2",
+      "hz": 97.99886,
+      "file": "G2.wav",
+      "duration": 0.3713,
+      "timbre": "dark",
+      "peak": 0.42
+    },
+    {
+      "note": "B2",
+      "hz": 123.47083,
+      "file": "B2.wav",
+      "duration": 0.3377,
+      "timbre": "mid",
+      "peak": 0.42
+    },
+    {
+      "note": "C3",
+      "hz": 130.81278,
+      "file": "C3.wav",
+      "duration": 0.3293,
+      "timbre": "mid",
+      "peak": 0.42
+    },
+    {
+      "note": "D3",
+      "hz": 146.83238,
+      "file": "D3.wav",
+      "duration": 0.3125,
+      "timbre": "mid",
+      "peak": 0.42
+    },
+    {
+      "note": "E3",
+      "hz": 164.81378,
+      "file": "E3.wav",
+      "duration": 0.2957,
+      "timbre": "mid",
+      "peak": 0.42
+    },
+    {
+      "note": "G3",
+      "hz": 195.99772,
+      "file": "G3.wav",
+      "duration": 0.2705,
+      "timbre": "mid",
+      "peak": 0.42
+    },
+    {
+      "note": "A3",
+      "hz": 220.0,
+      "file": "A3.wav",
+      "duration": 0.2537,
+      "timbre": "bright",
+      "peak": 0.42
+    },
+    {
+      "note": "B3",
+      "hz": 246.94165,
+      "file": "B3.wav",
+      "duration": 0.237,
+      "timbre": "bright",
+      "peak": 0.42
+    },
+    {
+      "note": "C4",
+      "hz": 261.62557,
+      "file": "C4.wav",
+      "duration": 0.2286,
+      "timbre": "bright",
+      "peak": 0.42
+    },
+    {
+      "note": "D4",
+      "hz": 293.66477,
+      "file": "D4.wav",
+      "duration": 0.2118,
+      "timbre": "bright",
+      "peak": 0.42
+    },
+    {
+      "note": "E4",
+      "hz": 329.62756,
+      "file": "E4.wav",
+      "duration": 0.195,
+      "timbre": "bright",
+      "peak": 0.42
+    }
+  ]
+}

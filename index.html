@@ -33,6 +33,39 @@
       <span class="badge" id="badgeMode">pendulum</span>
     </div>
 
+    <div class="dial-row circular-dials" id="circularDials" hidden aria-label="Circular Rhythm dials">
+      <div class="dial" data-dial="circRings" role="slider" tabindex="0" aria-label="Rings" aria-valuemin="1" aria-valuemax="8" aria-valuenow="8">
+        <div class="dial-glow" aria-hidden="true"></div>
+        <div class="dial-face" aria-hidden="true"><div class="dial-needle"></div></div>
+        <span class="dial-name">Rings</span>
+        <span class="dial-read" id="dialCircRingsRead">8</span>
+      </div>
+      <div class="dial" data-dial="circChord" role="slider" tabindex="0" aria-label="Chord" aria-valuemin="0" aria-valuemax="5" aria-valuenow="0">
+        <div class="dial-glow" aria-hidden="true"></div>
+        <div class="dial-face" aria-hidden="true"><div class="dial-needle"></div></div>
+        <span class="dial-name">Chord</span>
+        <span class="dial-read" id="dialCircChordRead">C</span>
+      </div>
+      <div class="dial" data-dial="circBpm" role="slider" tabindex="0" aria-label="Tempo" aria-valuemin="24" aria-valuemax="140" aria-valuenow="48">
+        <div class="dial-glow" aria-hidden="true"></div>
+        <div class="dial-face" aria-hidden="true"><div class="dial-needle"></div></div>
+        <span class="dial-name">Tempo</span>
+        <span class="dial-read" id="dialCircBpmRead">48</span>
+      </div>
+      <div class="dial" data-dial="circLine" role="slider" tabindex="0" aria-label="Line" aria-valuemin="0" aria-valuemax="1" aria-valuenow="1">
+        <div class="dial-glow" aria-hidden="true"></div>
+        <div class="dial-face" aria-hidden="true"><div class="dial-needle"></div></div>
+        <span class="dial-name">Line</span>
+        <span class="dial-read" id="dialCircLineRead">On</span>
+      </div>
+      <div class="dial" data-dial="circZoom" role="slider" tabindex="0" aria-label="Zoom" aria-valuemin="0.45" aria-valuemax="1.85" aria-valuenow="1">
+        <div class="dial-glow" aria-hidden="true"></div>
+        <div class="dial-face" aria-hidden="true"><div class="dial-needle"></div></div>
+        <span class="dial-name">Zoom</span>
+        <span class="dial-read" id="dialCircZoomRead">1.00</span>
+      </div>
+    </div>
+
     <div class="look-row" id="gateLooks" hidden aria-label="Gate looks">
       <span class="look-label">Looks</span>
       <button type="button" data-look="glass" aria-pressed="false">Glass</button>
@@ -44,6 +77,12 @@
       <button type="button" data-look="cube" aria-pressed="false">Cube</button>
     </div>
 
+    <div class="look-row cube-dials" id="cubeDials" hidden aria-label="Cube machine">
+      <span class="look-label">Cube</span>
+      <button type="button" id="cubeNestDown" aria-label="Fewer nests">−</button>
+      <span class="look-label" id="cubeNestRead">3 nests</span>
+      <button type="button" id="cubeNestUp" aria-label="More nests">+</button>
+    </div>
 
     <div class="dial-row" id="dialRow" aria-label="Live dials">
       <div class="dial" data-dial="bpm" role="slider" tabindex="0" aria-label="Speed" aria-valuemin="24" aria-valuemax="140" aria-valuenow="48">
@@ -76,6 +115,18 @@
         <span class="dial-name">Space</span>
         <span class="dial-read" id="dialWetRead">0.50</span>
       </div>
+      <div class="dial" data-dial="chord" role="slider" tabindex="0" aria-label="Chord" aria-valuemin="0" aria-valuemax="5" aria-valuenow="0">
+        <div class="dial-glow" aria-hidden="true"></div>
+        <div class="dial-face" aria-hidden="true"><div class="dial-needle"></div></div>
+        <span class="dial-name">Chord</span>
+        <span class="dial-read" id="dialChordRead">C</span>
+      </div>
+      <div class="dial" data-dial="rings" role="slider" tabindex="0" aria-label="Rings" aria-valuemin="1" aria-valuemax="8" aria-valuenow="8">
+        <div class="dial-glow" aria-hidden="true"></div>
+        <div class="dial-face" aria-hidden="true"><div class="dial-needle"></div></div>
+        <span class="dial-name">Rings</span>
+        <span class="dial-read" id="dialRingsRead">8</span>
+      </div>
     </div>
 
     <aside class="panel drawer" id="controlsPanel" aria-label="Master and voices">
@@ -88,6 +139,7 @@
                 <option value="gate" selected>Gate</option>
                 <option value="pendulum">Pendulum</option>
                 <option value="circular">Circular</option>
+                <option value="cubes">Cube</option>
                 <option value="linear">Linear</option>
                 <option value="mandala">Mandala</option>
                 <option value="triangles">Triangles</option>
@@ -162,6 +214,6 @@
       </div>
     </aside>
   </div>
-  <script src="app.js?v=20261004-looks2"></script>
+  <script src="app.js?v=20261004-cubekiln"></script>
 </body>
 </html>
