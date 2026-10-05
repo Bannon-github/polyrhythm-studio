@@ -32,6 +32,12 @@ On each face a traveler moves from the outer edge to the center and back, as a w
 
 The panel is nest depth only. Face hits play the dry wood-blocks in `samples/cubes/`, not the ring mallets.
 
+## Lucid Rhythms
+
+Its own machine. Ten crystal shafts in a row, low pitch left to high right (C2…C5). Glass cubes bounce with gravity inside the shafts and sound only on the bottom sill. Tops stay silent. Hits light the whole structure and play a live harp; a sparse bass alternates C2 and G2.
+
+Cubes stick on the sill through the hit flash, then rebound. One Lucid panel. No Gate Looks row.
+
 ## Gate
 
 Still in the menu. Orbs travel geometric paths and sound when they cross the shared center line. Older pendulum, mandala, wave, and ribbon views are in the same menu.
