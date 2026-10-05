@@ -23,7 +23,7 @@
       return [n, 440 * Math.pow(2, (semis - 69) / 12)];
     })
   );
-  const WAVEFORMS = ["sine","triangle","saw","square","noise","bell","kick","pad"];
+  const WAVEFORMS = ["sine","triangle","saw","square","noise","bell","kick","pad","harp","chime"];
   const COLORS = [
     "#7ec8ff", // cyan
     "#9b7cff", // violet
@@ -39,7 +39,7 @@
   const state = {
     playing: false,
     controlsHidden: true, // immersive: lab drawer collapsed by default
-    visualMode: "gate", // gate | pendulum | circular | linear | mandala | triangles | waves | sineRibbons
+    visualMode: "gate", // gate | pendulum | circular | cubes | lucid | linear | mandala | triangles | waves | sineRibbons
     // Optional Gate looks. Shared line is always glass. These stay off until chosen.
     gateLooks: { glass: false, reflect: false, clouds: false, bugs: false, wake: false, gateGlass: false, cube: false },
     // Circular Rhythm machine (own layout — not a Gate look). Mode id: circular.
@@ -53,6 +53,21 @@
       chordIndex: 0,
       ringCount: 8,
       notes: ["E4", "C4", "G3", "E3", "C3", "C2", "C2", "C2"],
+    },
+    // Lucid Rhythms (vertical bars). Audio owns pitches; Visuals owns the draw.
+    // Chord: C major. Bars low→high left→right (C2…C5). Bass alternates C2 <-> G2.
+    lucidRhythm: {
+      chord: "C",
+      barCount: 10,
+      notes: ["C2", "E2", "G2", "C3", "E3", "G3", "C4", "E4", "G4", "C5"],
+      bassNotes: ["C2", "G2"],
+    },
+    // Nested Triangles (mode "triangles"). Audio owns pitches / chime; Visuals owns draw.
+    // Chord: Am (A/C/E). Outer-edge-only hits. pathIds tri-0..tri-6.
+    triangleRhythm: {
+      chord: "Am",
+      stepCount: 7,
+      notes: ["A4", "C4", "E4", "A3", "C3", "E3", "A2"],
     },
     quadraticLength: false, // pendulum length ∝ period²
     bpm: 48,

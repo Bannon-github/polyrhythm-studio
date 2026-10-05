@@ -421,6 +421,10 @@
           applyPreset("Circular Rhythm");
           return;
         }
+        if (btn.dataset.mode === "lucid" && typeof lucidMachineLive === "function" && !lucidMachineLive()) {
+          applyPreset("Lucid Rhythms");
+          return;
+        }
         state.visualMode = btn.dataset.mode;
         syncMasterUI();
         saveLocal("autosave");
@@ -431,6 +435,10 @@
       visualModeEl.addEventListener("change", (e) => {
         if (e.target.value === "circular" && !circularMachineLive()) {
           applyPreset("Circular Rhythm");
+          return;
+        }
+        if (e.target.value === "lucid" && typeof lucidMachineLive === "function" && !lucidMachineLive()) {
+          applyPreset("Lucid Rhythms");
           return;
         }
         state.visualMode = e.target.value;

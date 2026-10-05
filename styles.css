@@ -672,7 +672,8 @@ body:not(.controls-hidden) .circular-dials {
 .dial-row[hidden] { display: none !important; }
 /* One stage panel: machine rows never stack. Chord/Rings live only on Circular. */
 body.mode-circular #dialRow,
-body.mode-cubes #dialRow { display: none !important; }
+body.mode-cubes #dialRow,
+body.mode-lucid #dialRow { display: none !important; }
 body:not(.mode-circular) #circularDials { display: none !important; }
 body:not(.mode-cubes) #cubeDials { display: none !important; }
 body:not(.mode-gate) #gateLooks { display: none !important; }

@@ -45,8 +45,86 @@
     return stopAt;
   }
 
+  // Lucid Rhythms bass: C major root/fifth an octave below the bars.
+  // Alternates exactly C2 <-> G2 on successive bass hits (not random, not fixed).
+  // Only advances on bottom-line meetings (onGateSideSample Lucid side===+1).
+  // Fired (a) when playVoiceHit lands on role==="bass" / pathId lucid-bass*, or
+  // (b) as a sparse side-chain from lucid bar harp hits (every LUCID_BASS_EVERY-th).
+  const LUCID_BASS_NOTES = ["C2", "G2"];
+  const LUCID_BASS_EVERY = 7;
+  let lucidBassHitCount = 0;
+  let lucidBarHitCount = 0;
+
+  function isLucidBassVoice(v) {
+    if (!v) return false;
+    if (v.role === "bass") return true;
+    const id = String(v.pathId || "");
+    return id === "lucid-bass" || id.indexOf("lucid-bass") === 0;
+  }
+
+  function isLucidBarVoice(v) {
+    if (!v) return false;
+    const id = String(v.pathId || "");
+    return /^lucid-\d+$/.test(id);
+  }
+
+  // Warm short sub + sine thump. Own bus; does not touch gate/cube sample banks.
+  // Alternates LUCID_BASS_NOTES on each call. Bank notes only (C2 / G2).
+  function playLucidBassTone(when, densityGain = 1, pan = 0, volume = 0.42) {
+    if (!ctx || !dryGain) return;
+    const note = LUCID_BASS_NOTES[lucidBassHitCount % 2];
+    lucidBassHitCount += 1;
+    const freq = NOTE_FREQ[note] || 65.41;
+    const now = when;
+    const vol = volume * densityGain;
+    const g = ctx.createGain();
+    const lp = ctx.createBiquadFilter();
+    lp.type = "lowpass";
+    lp.frequency.setValueAtTime(180, now);
+    lp.Q.value = 0.7;
+    const panner = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+    g.connect(lp);
+    if (panner) {
+      panner.pan.setValueAtTime(pan, now);
+      lp.connect(panner);
+      panner.connect(dryGain);
+    } else {
+      lp.connect(dryGain);
+    }
+    // Body sine
+    const body = ctx.createOscillator();
+    body.type = "sine";
+    body.frequency.setValueAtTime(freq * 1.35, now);
+    body.frequency.exponentialRampToValueAtTime(Math.max(28, freq * 0.92), now + 0.16);
+    body.connect(g);
+    // Soft sub an octave below
+    const sub = ctx.createOscillator();
+    sub.type = "sine";
+    sub.frequency.setValueAtTime(Math.max(28, freq * 0.5), now);
+    const sg = ctx.createGain();
+    sg.gain.value = 0.55;
+    sub.connect(sg);
+    sg.connect(g);
+    g.gain.setValueAtTime(0, now);
+    g.gain.linearRampToValueAtTime(vol * 0.72, now + 0.018);
+    g.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+    body.start(now);
+    body.stop(now + 0.6);
+    sub.start(now);
+    sub.stop(now + 0.6);
+  }
+
   function playVoiceHit(v, when, densityGain = 1) {
     if (v.mute || !ctx) return;
+
+    // Lucid bass voice: alternating C2/G2 thump only. Never samples, never harp.
+    if (isLucidBassVoice(v)) {
+      playLucidBassTone(when, densityGain, v.pan ?? 0, v.volume ?? 0.42);
+      v._flash = 1;
+      v._lastHitAt = transportTime();
+      return;
+    }
+
     const freq = resolveFreq(v);
     const vol = (v.volume ?? 0.6) * densityGain;
     const pan = v.pan ?? 0;
@@ -70,6 +148,7 @@
 
     // sine, triangle, bell, pad: one sample bank replaces the oscillator.
     // Cube faces use the wood-block map. Gate and Circular stay on the mallets.
+    // harp and chime stay generative (never gateSamples / cubeSamples).
     // noise and kick stay below. saw and square stay on the oscillator branch.
     let sampleStop = 0;
     if (wave === "sine" || wave === "triangle" || wave === "bell" || wave === "pad") {
@@ -112,9 +191,10 @@
       osc.stop(now + 0.34);
       srcEnd = now + 0.34;
     } else if (wave === "bell") {
-      const partials = [1, 2.76, 5.4, 8.2];
-      const gains = [1, 0.45, 0.22, 0.1];
-      const bellDur = 2.15;
+      // Refined FM-ish additive bell (still long / glassy). Lucid bars default to harp instead.
+      const partials = [1, 2.76, 5.4, 8.21, 11.1];
+      const gains = [1, 0.42, 0.2, 0.09, 0.04];
+      const bellDur = 2.05;
       partials.forEach((p, i) => {
         const o = ctx.createOscillator();
         o.type = "sine";
@@ -127,9 +207,95 @@
         o.stop(now + bellDur);
       });
       g.gain.setValueAtTime(0, now);
-      g.gain.linearRampToValueAtTime(vol * 0.52, now + 0.028);
-      g.gain.exponentialRampToValueAtTime(0.001, now + 2.0);
+      g.gain.linearRampToValueAtTime(vol * 0.5, now + 0.018);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 1.9);
       srcEnd = now + bellDur;
+    } else if (wave === "harp") {
+      // Live plucked harp: short bright attack, decaying additive partials.
+      // Not the long FM bell, not mallet samples, not wood block.
+      const partials = [1, 2, 3, 4.01, 5.04, 6.08, 7.12];
+      const gains = [1, 0.52, 0.28, 0.16, 0.09, 0.05, 0.025];
+      const harpDur = 1.12;
+      partials.forEach((p, i) => {
+        const o = ctx.createOscillator();
+        o.type = "sine";
+        o.frequency.value = freq * p;
+        const pg = ctx.createGain();
+        const pDur = Math.max(0.1, harpDur * (1 - i * 0.11));
+        pg.gain.setValueAtTime(0, now);
+        pg.gain.linearRampToValueAtTime(gains[i], now + 0.003);
+        pg.gain.exponentialRampToValueAtTime(0.001, now + pDur);
+        o.connect(pg);
+        pg.connect(g);
+        o.start(now);
+        o.stop(now + pDur + 0.04);
+      });
+      // Tiny pluck noise tick into the same amp
+      const nLen = Math.floor(ctx.sampleRate * 0.03);
+      const nBuf = ctx.createBuffer(1, nLen, ctx.sampleRate);
+      const nd = nBuf.getChannelData(0);
+      for (let i = 0; i < nLen; i++) nd[i] = (Math.random() * 2 - 1) * (1 - i / nLen);
+      const nSrc = ctx.createBufferSource();
+      nSrc.buffer = nBuf;
+      const nBp = ctx.createBiquadFilter();
+      nBp.type = "bandpass";
+      nBp.frequency.value = Math.min(4200, freq * 3.2);
+      nBp.Q.value = 1.2;
+      const nG = ctx.createGain();
+      nG.gain.setValueAtTime(vol * 0.22, now);
+      nG.gain.exponentialRampToValueAtTime(0.001, now + 0.028);
+      nSrc.connect(nBp);
+      nBp.connect(nG);
+      nG.connect(g);
+      nSrc.start(now);
+      nSrc.stop(now + 0.035);
+      g.gain.setValueAtTime(0, now);
+      g.gain.linearRampToValueAtTime(vol * 0.58, now + 0.005);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 1.0);
+      srcEnd = now + harpDur;
+    } else if (wave === "chime") {
+      // Soft metallic triangle-chime: muted glassy pluck, short step-readable decay.
+      // Nested Triangles outer-edge hits. Not harp, not mallet, not wood-block.
+      const partials = [1, 2.714, 5.405, 8.215];
+      const gains = [1, 0.38, 0.16, 0.06];
+      const chimeDur = 0.72;
+      partials.forEach((p, i) => {
+        const o = ctx.createOscillator();
+        o.type = "sine";
+        o.frequency.value = freq * p;
+        const pg = ctx.createGain();
+        const pDur = Math.max(0.08, chimeDur * (1 - i * 0.18));
+        pg.gain.setValueAtTime(0, now);
+        pg.gain.linearRampToValueAtTime(gains[i], now + 0.002);
+        pg.gain.exponentialRampToValueAtTime(0.001, now + pDur);
+        o.connect(pg);
+        pg.connect(g);
+        o.start(now);
+        o.stop(now + pDur + 0.03);
+      });
+      // Tiny metallic tick
+      const nLen = Math.floor(ctx.sampleRate * 0.018);
+      const nBuf = ctx.createBuffer(1, nLen, ctx.sampleRate);
+      const nd = nBuf.getChannelData(0);
+      for (let i = 0; i < nLen; i++) nd[i] = (Math.random() * 2 - 1) * (1 - i / nLen);
+      const nSrc = ctx.createBufferSource();
+      nSrc.buffer = nBuf;
+      const nHp = ctx.createBiquadFilter();
+      nHp.type = "highpass";
+      nHp.frequency.value = Math.min(6000, freq * 4.5);
+      nHp.Q.value = 0.7;
+      const nG = ctx.createGain();
+      nG.gain.setValueAtTime(vol * 0.14, now);
+      nG.gain.exponentialRampToValueAtTime(0.001, now + 0.016);
+      nSrc.connect(nHp);
+      nHp.connect(nG);
+      nG.connect(g);
+      nSrc.start(now);
+      nSrc.stop(now + 0.02);
+      g.gain.setValueAtTime(0, now);
+      g.gain.linearRampToValueAtTime(vol * 0.48, now + 0.003);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.62);
+      srcEnd = now + chimeDur;
     } else if (wave === "pad") {
       [0, 0.02, -0.015].forEach((det) => {
         const o = ctx.createOscillator();

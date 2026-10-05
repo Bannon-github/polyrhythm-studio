@@ -157,6 +157,7 @@
     const mode = state.visualMode;
     document.body.classList.toggle("mode-circular", mode === "circular");
     document.body.classList.toggle("mode-cubes", mode === "cubes");
+    document.body.classList.toggle("mode-lucid", mode === "lucid");
     document.body.classList.toggle("mode-gate", mode === "gate");
     const lookRow = $("#gateLooks");
     if (lookRow) lookRow.hidden = mode !== "gate";
@@ -165,13 +166,16 @@
     const cubeRow = $("#cubeDials");
     if (cubeRow) cubeRow.hidden = mode !== "cubes";
     const dialRow = $("#dialRow");
-    // Circular and Cube own the stage. Gate and other modes keep the shared dials.
-    if (dialRow) dialRow.hidden = mode === "circular" || mode === "cubes";
+    // Circular, Cube, and Lucid own the stage. Gate and other modes keep the shared dials.
+    if (dialRow) dialRow.hidden = mode === "circular" || mode === "cubes" || mode === "lucid";
     document.querySelectorAll("#dialRow [data-dial='chord'], #dialRow [data-dial='rings']").forEach((el) => {
       el.hidden = true;
     });
     // When Circular is selected, keep voices on ring pathIds
     if (state.visualMode === "circular" && typeof ensureCircularMachine === "function") {
       ensureCircularMachine();
+    }
+    if (state.visualMode === "lucid" && typeof ensureLucidMachine === "function") {
+      ensureLucidMachine();
     }
     if (typeof syncCircularDialReadouts === "function") syncCircularDialReadouts();

@@ -71,12 +71,538 @@
     });
   }
 
-  // Gate hit FX pools. Caps keep Quest-ish frames light.
-  const gatePulses = [];
-  const gateSparks = [];
-  const gateSmoke = [];
-  const gateOrbTrails = {};
-  let gateFxStamp = 0;
+  // ----- Lucid Rhythms (vertical glass cubes) -----
+  // HD isometric glass cubes bounce with gravity/velocity; floor is the meeting edge.
+  // side +1 = floor collision/meeting; side -1 = above. Same latch as Gate/Circular.
+  // Columns sorted low pitch left → high right. Edge glow hue unique per tone.
+  const lucidPulses = [];
+  let lucidFxStamp = 0;
+  let lucidStructFlash = 0;
+
+  function lucidMachineLive() {
+    return state.visualMode === "lucid" && state.voices.some((v) => /^lucid-\d+$/.test(String(v.pathId || "")));
+  }
+
+  function ensureLucidMachine() {
+    if (state.visualMode !== "lucid") return;
+    if (lucidMachineLive()) return;
+    if (typeof installLucidVoices === "function") {
+      installLucidVoices();
+      if (!state.activePreset) state.activePreset = "Lucid Rhythms";
+      return;
+    }
+    if (typeof applyPreset === "function") applyPreset("Lucid Rhythms");
+  }
+
+  function tickLucidFx(dt) {
+    lucidStructFlash = Math.max(0, lucidStructFlash - dt * 2.1);
+    for (let i = lucidPulses.length - 1; i >= 0; i--) {
+      lucidPulses[i].life -= dt;
+      if (lucidPulses[i].life <= 0) lucidPulses.splice(i, 1);
+    }
+  }
+
+  function spawnLucidPulse(v, x, y, edgeRgb) {
+    lucidStructFlash = 1;
+    lucidPulses.push({
+      life: 0.62,
+      max: 0.62,
+      color: v.color,
+      edge: edgeRgb || null,
+      x: x,
+      y: y,
+    });
+    if (lucidPulses.length > 14) lucidPulses.shift();
+  }
+
+  // Absolute pitch (Hz) for column sort — prefer resolveFreq / note / _pitch01 / lucid-N.
+  function lucidVoicePitch(v) {
+    if (!v) return 220;
+    if (typeof resolveFreq === "function") {
+      try {
+        const f = resolveFreq(v);
+        if (f && isFinite(f) && f > 0) return f;
+      } catch (e) { /* fall through */ }
+    }
+    if (v.note && typeof NOTE_FREQ !== "undefined" && NOTE_FREQ[v.note]) return NOTE_FREQ[v.note];
+    if (typeof v.hz === "number" && isFinite(v.hz) && v.hz > 0) return v.hz;
+    if (typeof publishPitchHint === "function") publishPitchHint(v);
+    if (typeof v._pitch01 === "number" && isFinite(v._pitch01)) {
+      return 65.41 * Math.pow(523.25 / 65.41, Math.max(0, Math.min(1, v._pitch01)));
+    }
+    const m = String(v.pathId || "").match(/^lucid-(\d+)$/);
+    if (m) return 65.41 * Math.pow(2, Number(m[1]) * 0.35);
+    return 220;
+  }
+
+  function lucidPitch01(v) {
+    if (typeof publishPitchHint === "function") publishPitchHint(v);
+    if (typeof v._pitch01 === "number" && isFinite(v._pitch01)) {
+      return Math.max(0, Math.min(1, v._pitch01));
+    }
+    const f = lucidVoicePitch(v);
+    return Math.max(0, Math.min(1, Math.log(Math.max(20, f) / 65.41) / Math.log(523.25 / 65.41)));
+  }
+
+  // Distinct rim hue per tone: deep indigo (low) → aqua → soft gold (high).
+  // Lucid glass identity — not Gate neon cube, not kiln ember.
+  function lucidToneRgb(v) {
+    const p = lucidPitch01(v);
+    const h = (268 - p * 198) / 360; // 268° → 70°
+    const s = 0.58 + p * 0.28;
+    const l = 0.46 + p * 0.16;
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p2 = 2 * l - q;
+    const hue2rgb = (t, uu, vv) => {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1 / 6) return uu + (vv - uu) * 6 * t;
+      if (t < 1 / 2) return vv;
+      if (t < 2 / 3) return uu + (vv - uu) * (2 / 3 - t) * 6;
+      return uu;
+    };
+    return [
+      Math.round(hue2rgb(h + 1 / 3, p2, q) * 255),
+      Math.round(hue2rgb(h, p2, q) * 255),
+      Math.round(hue2rgb(h - 1 / 3, p2, q) * 255),
+    ];
+  }
+
+  function lucidRgba(rgb, a) {
+    return "rgba(" + (rgb[0] | 0) + "," + (rgb[1] | 0) + "," + (rgb[2] | 0) + "," + a + ")";
+  }
+
+  function lucidMixRgb(a, b, t) {
+    const u = Math.max(0, Math.min(1, t));
+    return [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u, a[2] + (b[2] - a[2]) * u];
+  }
+
+  // High-definition isometric glass cube — translucent faces, specular, tone rim glow.
+  // Resting contact = visible MASS bottom (botL/botR), NOT the sharp iso tip (botF).
+  // Physics _lucidY and draw bottomY both mean this plane — flush on shaft sill when landed.
+  // Flash must NOT change contact (no size*(1+f) in the rest offset) or cubes lift on hit.
+  function lucidCubeContact(size) {
+    const s = Math.max(1, size || 1);
+    const dy = s * 0.45;
+    const dz = s * 0.95;
+    return dz * 0.45 + dy * 0.35; // botL / botR resting plane
+  }
+
+  // HD isometric glass cube. bottomY = visible mass resting plane (shaft sill when landed).
+  function drawLucidGlassCube(g, cx, bottomY, size, edgeRgb, flash, muted) {
+    const f = Math.max(0, Math.min(1, flash || 0));
+    // Geometry size is stable; flash only brightens / soft-blooms (no lift on hit).
+    const s = Math.max(1, size || 1);
+    const dx = s * 0.78;
+    const dy = s * 0.45;
+    const dz = s * 0.95;
+    const contact = dz * 0.45 + dy * 0.35; // must match lucidCubeContact(s)
+    const cy = bottomY - contact;
+    // Tip (botF) sits slightly below the sill into the floor lip — planted, not floating.
+    const topPeak = [cx, cy - dz * 0.55 - dy * 0.15];
+    const topR = [cx + dx, cy - dz * 0.55 + dy * 0.35];
+    const topF = [cx, cy - dz * 0.55 + dy * 0.85];
+    const topL = [cx - dx, cy - dz * 0.55 + dy * 0.35];
+    const botR = [cx + dx, cy + dz * 0.45 + dy * 0.35]; // y === bottomY
+    const botF = [cx, cy + dz * 0.45 + dy * 0.85];
+    const botL = [cx - dx, cy + dz * 0.45 + dy * 0.35]; // y === bottomY
+
+    // Clip everything (bloom + body) to the sill so nothing paints under the floor.
+    g.save();
+    g.beginPath();
+    g.rect(cx - s * 2.4, cy - s * 3.4, s * 4.8, bottomY - (cy - s * 3.4) + 0.75);
+    g.clip();
+
+    const white = [245, 252, 255];
+    const cool = [140, 185, 230];
+    const deep = [40, 70, 110];
+    const edge = edgeRgb || cool;
+    const aMul = muted ? 0.28 : 1;
+
+    const fillPoly = (pts, style) => {
+      g.beginPath();
+      g.moveTo(pts[0][0], pts[0][1]);
+      for (let i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]);
+      g.closePath();
+      g.fillStyle = style;
+      g.fill();
+    };
+    const strokePoly = (pts, style, width) => {
+      g.beginPath();
+      g.moveTo(pts[0][0], pts[0][1]);
+      for (let i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]);
+      g.closePath();
+      g.strokeStyle = style;
+      g.lineWidth = width;
+      g.stroke();
+    };
+
+    g.save();
+    g.globalCompositeOperation = "lighter";
+    const bloomR = s * (1.85 + f * 1.1);
+    const bloom = g.createRadialGradient(cx, cy, s * 0.15, cx, cy, bloomR);
+    bloom.addColorStop(0, lucidRgba(edge, (0.28 + f * 0.42) * aMul));
+    bloom.addColorStop(0.45, lucidRgba(edge, (0.1 + f * 0.18) * aMul));
+    bloom.addColorStop(1, lucidRgba(edge, 0));
+    g.fillStyle = bloom;
+    g.beginPath();
+    g.arc(cx, cy, bloomR, 0, Math.PI * 2);
+    g.fill();
+    g.restore();
+
+    g.save();
+    g.globalCompositeOperation = "source-over";
+    g.globalAlpha = aMul;
+
+    const rightGrad = g.createLinearGradient(topF[0], topF[1], botR[0], botR[1]);
+    rightGrad.addColorStop(0, lucidRgba(lucidMixRgb(cool, white, 0.35), 0.22 + f * 0.12));
+    rightGrad.addColorStop(0.45, lucidRgba(lucidMixRgb(edge, cool, 0.35), 0.16 + f * 0.08));
+    rightGrad.addColorStop(1, lucidRgba(lucidMixRgb(deep, edge, 0.4), 0.28 + f * 0.1));
+    fillPoly([topF, topR, botR, botF], rightGrad);
+
+    const leftGrad = g.createLinearGradient(topL[0], topL[1], botF[0], botF[1]);
+    leftGrad.addColorStop(0, lucidRgba(lucidMixRgb(cool, edge, 0.25), 0.2 + f * 0.1));
+    leftGrad.addColorStop(0.5, lucidRgba(lucidMixRgb(deep, cool, 0.45), 0.18 + f * 0.08));
+    leftGrad.addColorStop(1, lucidRgba(deep, 0.32 + f * 0.1));
+    fillPoly([topL, topF, botF, botL], leftGrad);
+
+    const topGrad = g.createLinearGradient(topL[0], topPeak[1], topF[0], topF[1]);
+    topGrad.addColorStop(0, lucidRgba(white, 0.55 + f * 0.25));
+    topGrad.addColorStop(0.35, lucidRgba(lucidMixRgb(white, edge, 0.2), 0.32 + f * 0.15));
+    topGrad.addColorStop(0.7, lucidRgba(lucidMixRgb(cool, edge, 0.35), 0.2 + f * 0.1));
+    topGrad.addColorStop(1, lucidRgba(lucidMixRgb(edge, cool, 0.4), 0.26 + f * 0.12));
+    fillPoly([topPeak, topR, topF, topL], topGrad);
+
+    g.save();
+    g.beginPath();
+    g.moveTo(topPeak[0], topPeak[1]);
+    g.lineTo(topR[0], topR[1]);
+    g.lineTo(topF[0], topF[1]);
+    g.lineTo(topL[0], topL[1]);
+    g.closePath();
+    g.clip();
+    const spec = g.createLinearGradient(topL[0], topPeak[1], topR[0], topF[1]);
+    spec.addColorStop(0, "rgba(255,255,255,0)");
+    spec.addColorStop(0.42, "rgba(255,255,255," + (0.08 + f * 0.12) + ")");
+    spec.addColorStop(0.52, "rgba(255,255,255," + (0.55 + f * 0.3) + ")");
+    spec.addColorStop(0.62, "rgba(255,255,255," + (0.1 + f * 0.1) + ")");
+    spec.addColorStop(1, "rgba(255,255,255,0)");
+    g.fillStyle = spec;
+    g.fillRect(cx - s * 1.4, cy - s * 1.4, s * 2.8, s * 2.8);
+    for (let i = 0; i < 3; i++) {
+      const fx = cx + (i - 1) * s * 0.28;
+      const fy = cy - dz * 0.35 + (i % 2) * s * 0.12;
+      const fr = s * (0.18 + i * 0.05);
+      const frost = g.createRadialGradient(fx, fy, 0, fx, fy, fr);
+      frost.addColorStop(0, "rgba(255,255,255," + (0.12 + f * 0.08) + ")");
+      frost.addColorStop(1, "rgba(255,255,255,0)");
+      g.fillStyle = frost;
+      g.beginPath();
+      g.arc(fx, fy, fr, 0, Math.PI * 2);
+      g.fill();
+    }
+    g.restore();
+
+    strokePoly([topF, topR, botR, botF], "rgba(20,40,70,0.22)", 1);
+    strokePoly([topL, topF, botF, botL], "rgba(20,40,70,0.26)", 1);
+    strokePoly([topPeak, topR, topF, topL], "rgba(255,255,255,0.35)", 1.05);
+
+    g.globalCompositeOperation = "lighter";
+    const rimA = (0.42 + f * 0.5) * aMul;
+    const rimW = 1.35 + f * 2.1;
+    strokePoly([topPeak, topR, botR, botF, botL, topL], lucidRgba(edge, rimA), rimW);
+    strokePoly([topPeak, topR, topF, topL], lucidRgba(white, 0.25 + f * 0.35), 1.1 + f);
+    g.beginPath();
+    g.moveTo(topL[0], topL[1]);
+    g.lineTo(topF[0], topF[1]);
+    g.lineTo(topR[0], topR[1]);
+    g.moveTo(topF[0], topF[1]);
+    g.lineTo(botF[0], botF[1]);
+    g.strokeStyle = lucidRgba(edge, 0.55 + f * 0.4);
+    g.lineWidth = 1.2 + f * 1.4;
+    g.stroke();
+
+    g.restore();
+    g.restore(); // sill clip
+  }
+
+  // Crystal shaft column — glass walls + floor lip. Floor Y is the collision plane.
+  function drawLucidCrystalShaft(g, x, topY, floorY, halfW, toneRgb, struct) {
+    const L = x - halfW;
+    const R = x + halfW;
+    const rgb = toneRgb || [150, 180, 230];
+    const glow = Math.min(1, struct || 0);
+
+    // Shaft body — translucent crystal, no grey slab under the floor.
+    const body = g.createLinearGradient(L, topY, R, floorY);
+    body.addColorStop(0, lucidRgba(rgb, 0.03 + glow * 0.05));
+    body.addColorStop(0.55, lucidRgba(rgb, 0.045 + glow * 0.08));
+    body.addColorStop(1, lucidRgba(rgb, 0.08 + glow * 0.14));
+    g.fillStyle = body;
+    g.fillRect(L, topY, halfW * 2, floorY - topY);
+
+    // Inner refraction wash (vertical).
+    const sheen = g.createLinearGradient(L, topY, L + halfW * 0.45, floorY);
+    sheen.addColorStop(0, "rgba(255,255,255," + (0.04 + glow * 0.06) + ")");
+    sheen.addColorStop(0.5, "rgba(255,255,255,0)");
+    sheen.addColorStop(1, lucidRgba(rgb, 0.05 + glow * 0.1));
+    g.fillStyle = sheen;
+    g.fillRect(L, topY, halfW * 2, floorY - topY);
+
+    // Crystal side walls.
+    g.strokeStyle = lucidRgba(rgb, 0.16 + glow * 0.35);
+    g.lineWidth = 1.15 + glow * 0.9;
+    g.beginPath();
+    g.moveTo(L, topY);
+    g.lineTo(L, floorY);
+    g.moveTo(R, topY);
+    g.lineTo(R, floorY);
+    g.stroke();
+
+    // Soft top lip of the shaft (not a page-wide gate).
+    g.strokeStyle = "rgba(220,235,255," + (0.12 + glow * 0.2) + ")";
+    g.lineWidth = 1;
+    g.beginPath();
+    g.moveTo(L, topY);
+    g.lineTo(R, topY);
+    g.stroke();
+
+    // Shaft floor = structure bottom for this column (bright crystal sill).
+    // Drawn ON floorY only — no translucent plate under/past the sill.
+    g.strokeStyle = "rgba(255,255,255," + (0.4 + glow * 0.5) + ")";
+    g.lineWidth = 1.35 + glow * 1.8;
+    g.beginPath();
+    g.moveTo(L, floorY);
+    g.lineTo(R, floorY);
+    g.stroke();
+    const sill = g.createLinearGradient(L, floorY - 2.5, R, floorY);
+    sill.addColorStop(0, lucidRgba(rgb, 0.12 + glow * 0.2));
+    sill.addColorStop(0.5, "rgba(245,252,255," + (0.5 + glow * 0.35) + ")");
+    sill.addColorStop(1, lucidRgba(rgb, 0.12 + glow * 0.2));
+    g.fillStyle = sill;
+    g.fillRect(L, floorY - 2.5, halfW * 2, 2.5); // entirely above/on floorY
+  }
+
+  function drawLucid(g, w, h, t, sampleOnly) {
+    ensureLucidMachine();
+    const nowMs = performance.now();
+    const dt = lucidFxStamp ? Math.min(0.05, (nowMs - lucidFxStamp) / 1000) : 0.016;
+    lucidFxStamp = nowMs;
+    tickLucidFx(dt);
+
+    // Only one cube per lucid-0…lucid-9. Skip mute bass / any bass traveler (ghost col).
+    const bars = [];
+    const seen = Object.create(null);
+    for (let i = 0; i < state.voices.length; i++) {
+      const v = state.voices[i];
+      const id = String(v.pathId || "");
+      if (!/^lucid-\d+$/.test(id)) continue;
+      if (seen[id]) continue;
+      seen[id] = true;
+      bars.push(v);
+    }
+    if (!bars.length) {
+      for (let i = 0; i < state.voices.length; i++) {
+        const v = state.voices[i];
+        const id = String(v.pathId || "");
+        if (v.role === "bass" || id === "lucid-bass" || id.indexOf("lucid-bass") === 0) continue;
+        if (seen[id || ("i" + i)]) continue;
+        seen[id || ("i" + i)] = true;
+        bars.push(v);
+      }
+    }
+    // Low octaves left → high right (Audio lucid-0=C2 … lucid-9=C5).
+    bars.sort((a, b) => lucidVoicePitch(a) - lucidVoicePitch(b) || String(a.pathId || "").localeCompare(String(b.pathId || "")));
+
+    const n = Math.max(1, bars.length);
+    const marginX = w * 0.07;
+    const span = w - marginX * 2;
+    const topY = h * 0.12;
+    // Visible shaft floor — physics contact Y equals this (mass rests on sill).
+    const floorY = h * 0.82;
+    const colW = span / n;
+    const shaftHalf = Math.max(10, Math.min(colW * 0.42, w * 0.038));
+    const cubeSize = Math.max(10, Math.min(shaftHalf * 0.78, h * 0.034));
+    const contact0 = lucidCubeContact(cubeSize); // flash-invariant
+    const meetEps = Math.max(3, cubeSize * 0.35);
+    const travel = Math.max(48, floorY - topY - contact0);
+    const playing = !!state.playing;
+    // layoutKey bump after mass-on-sill + no-bass-draw fix.
+    const layoutKey = (w | 0) + "x" + (h | 0) + ":" + (floorY | 0) + ":shaft8";
+
+    const travelers = [];
+    const processVoice = (v, colIndex) => {
+      const period = Math.max(0.18, voicePeriodSec(v));
+      const height = travel * 0.92;
+      const gravity = (8 * height) / (period * period);
+      const vLaunch = gravity * period * 0.5;
+      const x = marginX + colW * (colIndex + 0.5);
+      const edgeRgb = lucidToneRgb(v);
+      // _lucidY = visible mass resting Y (flush with shaft sill when landed).
+      const minBottom = topY + contact0 + cubeSize * 0.15;
+
+      if (v._lucidLayout !== layoutKey || v._lucidY == null || !isFinite(v._lucidY)) {
+        const phase = ((v.phase || 0) % 1 + 1) % 1;
+        v._lucidY = minBottom + height * (0.12 + phase * 0.55 + (colIndex % 3) * 0.08);
+        v._lucidVy = gravity * period * (0.05 + phase * 0.15);
+        v._lucidStickUntil = 0;
+        v._lucidPlanted = false;
+        v._lucidLayout = layoutKey;
+      }
+
+      // Stick on sill while hit is visually active so screenshots show mass flush on floor.
+      const flashNow = v._flash || 0;
+      const stickUntil = v._lucidStickUntil || 0;
+      let sticking = !!v._lucidPlanted && ((stickUntil > 0 && nowMs < stickUntil) || flashNow > 0.25);
+
+      if (sticking) {
+        // Hold pinned — no gravity / no rebound until sticky ends.
+        v._lucidY = floorY;
+        v._lucidVy = 0;
+      } else if (playing && dt > 0) {
+        // Sticky just ended while still on sill: launch once, then integrate.
+        if (v._lucidPlanted && v._lucidY >= floorY - 1) {
+          v._lucidPlanted = false;
+          v._lucidStickUntil = 0;
+          v._lucidVy = -vLaunch * (0.88 + (colIndex % 5) * 0.018);
+        }
+        v._lucidVy += gravity * dt;
+        v._lucidY += v._lucidVy * dt;
+      }
+
+      // Soft ceiling — silent (tops do not emit).
+      if (v._lucidY < minBottom) {
+        v._lucidY = minBottom;
+        if (v._lucidVy < 0) v._lucidVy *= -0.15;
+      }
+
+      let floorHit = false;
+      if (v._lucidY >= floorY) {
+        v._lucidY = floorY; // mass flush on shaft sill
+        if (sticking || v._lucidPlanted) {
+          v._lucidVy = 0; // stay planted; do not re-trigger floorHit
+        } else if (v._lucidVy > 0 || Math.abs(v._lucidVy) < 8) {
+          // Fresh contact: pin ~150ms / while flash>0.25, then launch.
+          floorHit = true;
+          v._lucidVy = 0;
+          v._lucidStickUntil = nowMs + 150;
+          v._lucidPlanted = true;
+          sticking = true;
+        }
+      }
+
+      const y = v._lucidY;
+      // Debug: when landed, mass resting Y === floorY for every column (delta 0).
+      v._lucidSillDelta = y - floorY;
+      const side = (floorHit || y >= floorY - meetEps) ? 1 : -1;
+      const orbPhase = period > 0 ? (((t / period) + (v.phase || 0)) % 1 + 1) % 1 : 0;
+      v._orbPhase = orbPhase;
+      v._gatePhase = 0.5;
+      v._orbX = x;
+      v._orbY = y - contact0; // visual center
+      v._gateSide = side;
+      v._lucidEdgeRgb = edgeRgb;
+      if (typeof publishPitchHint === "function") publishPitchHint(v);
+      if (typeof onGateSideSample === "function" && onGateSideSample(v, side)) {
+        v._flashX = x;
+        v._flashY = floorY;
+        if (!v.mute) spawnLucidPulse(v, x, floorY, edgeRgb);
+      }
+      travelers.push({ v, x, y, colIndex, edgeRgb });
+    };
+
+    for (let i = 0; i < bars.length; i++) processVoice(bars[i], i);
+    // Bass is audio-only (side-chained from bar hits) — never draw a second glass cube.
+
+    if (sampleOnly) return;
+
+    const struct = Math.min(1, lucidStructFlash);
+    const frameL = marginX;
+    const frameR = marginX + span;
+    g.globalCompositeOperation = "source-over";
+
+    // Whole-structure pulse wash — clipped to shaft frame, stops at sill (no underhang).
+    if (struct > 0.02) {
+      g.save();
+      g.beginPath();
+      g.rect(frameL, topY, span, floorY - topY);
+      g.clip();
+      const wash = g.createLinearGradient(0, topY, 0, floorY);
+      wash.addColorStop(0, "rgba(200,230,255," + (0.03 + struct * 0.1) + ")");
+      wash.addColorStop(0.55, "rgba(220,240,255," + (0.05 + struct * 0.16) + ")");
+      wash.addColorStop(1, "rgba(255,252,245," + (0.12 + struct * 0.38) + ")");
+      g.fillStyle = wash;
+      g.fillRect(frameL, topY, span, floorY - topY);
+      g.restore();
+    }
+
+    // Crystal shafts — cubes bounce inside these. Floor = bottom of each shaft.
+    for (let i = 0; i < n; i++) {
+      const x = marginX + colW * (i + 0.5);
+      const bar = bars[i];
+      drawLucidCrystalShaft(g, x, topY, floorY, shaftHalf, bar ? lucidToneRgb(bar) : [150, 180, 230], struct);
+    }
+
+    // Hit pulses: origin column + full-structure flood — clipped, no spill past sill/right.
+    g.save();
+    g.beginPath();
+    g.rect(frameL, topY, span, floorY - topY);
+    g.clip();
+    g.globalCompositeOperation = "lighter";
+    for (let i = 0; i < lucidPulses.length; i++) {
+      const p = lucidPulses[i];
+      const u = Math.max(0, p.life / p.max);
+      const a = u * u;
+      const pulseRgb = p.edge || [180, 210, 255];
+      const flood = g.createLinearGradient(frameL, topY, frameR, floorY);
+      flood.addColorStop(0, lucidRgba(pulseRgb, 0.04 * a));
+      flood.addColorStop(0.5, lucidRgba(pulseRgb, 0.14 * a));
+      flood.addColorStop(1, lucidRgba(pulseRgb, 0.28 * a));
+      g.fillStyle = flood;
+      g.fillRect(frameL, topY, span, floorY - topY);
+      // Sill brighten ON floorY only — inside each shaft, no underhang band.
+      for (let c = 0; c < n; c++) {
+        const sx = marginX + colW * (c + 0.5);
+        const lip = g.createRadialGradient(sx, floorY, 1, sx, floorY, shaftHalf * 1.15);
+        lip.addColorStop(0, lucidRgba(pulseRgb, 0.55 * a));
+        lip.addColorStop(0.55, lucidRgba(pulseRgb, 0.18 * a));
+        lip.addColorStop(1, lucidRgba(pulseRgb, 0));
+        g.fillStyle = lip;
+        g.fillRect(sx - shaftHalf, floorY - 3, shaftHalf * 2, 3);
+        const shaftLight = g.createLinearGradient(sx, topY, sx, floorY);
+        shaftLight.addColorStop(0, lucidRgba(pulseRgb, 0));
+        shaftLight.addColorStop(0.6, lucidRgba(pulseRgb, 0.1 * a));
+        shaftLight.addColorStop(1, lucidRgba(pulseRgb, 0.35 * a));
+        g.fillStyle = shaftLight;
+        g.fillRect(sx - shaftHalf * 0.85, topY, shaftHalf * 1.7, floorY - topY);
+      }
+      // Origin bloom — clipped to origin shaft only, fully above sill (no floorY-22 spill band).
+      const bloomR = Math.min(shaftHalf * 1.35, colW * 0.95) * (0.7 + (1 - u) * 0.45);
+      g.save();
+      g.beginPath();
+      g.rect(p.x - shaftHalf, topY, shaftHalf * 2, floorY - topY);
+      g.clip();
+      const grd = g.createRadialGradient(p.x, floorY, 1, p.x, floorY, bloomR);
+      grd.addColorStop(0, lucidRgba(pulseRgb, 0.65 * a));
+      grd.addColorStop(0.45, lucidRgba(pulseRgb, 0.2 * a));
+      grd.addColorStop(1, lucidRgba(pulseRgb, 0));
+      g.fillStyle = grd;
+      g.fillRect(p.x - shaftHalf, floorY - bloomR, shaftHalf * 2, bloomR);
+      g.restore();
+    }
+    g.restore();
+
+    const drawOrder = travelers.slice().sort((a, b) => a.y - b.y);
+    for (let i = 0; i < drawOrder.length; i++) {
+      const { v, x, y, edgeRgb } = drawOrder[i];
+      const flash = Math.min(v._flash || 0, 1);
+      // y is mass resting plane — cube sits flush on shaft sill when y === floorY.
+      drawLucidGlassCube(g, x, y, cubeSize, edgeRgb, flash, !!v.mute);
+    }
+
+    g.globalCompositeOperation = "source-over";
+  }
+
 
   function gateRgb(hex) {
     const h = toHex(hex).slice(1);

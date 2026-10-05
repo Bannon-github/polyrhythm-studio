@@ -155,6 +155,94 @@
         })),
       };
     },
+    // Lucid Rhythms — vertical bars. Visuals owns drawLucid; Audio owns pitches/harp.
+    // Harmony: C major (C/E/G). Bars low→high left→right. Bass alternates C2 <-> G2.
+    "Lucid Rhythms": () => {
+      const notes = ["C2", "E2", "G2", "C3", "E3", "G3", "C4", "E4", "G4", "C5"];
+      const base = 240 / 52;
+      const voices = notes.map((note, i) => ({
+        name: "Bar " + i,
+        beatsInCycle: 3 + i,
+        usePeriod: true,
+        // Very slightly different speeds so crossings drift (clip idea).
+        periodSec: base * (1 + i * 0.041),
+        pitchMode: "note",
+        note,
+        pathKind: "bar",
+        pathId: "lucid-" + i,
+        waveform: "harp",
+        volume: 0.2 + (0.08 * (i % 5)) / 4,
+        simplicity: 78,
+        phase: (i * 0.07) % 1,
+        pan: -0.45 + (i / 9) * 0.9,
+        color: COLORS[i % COLORS.length],
+      }));
+      // Optional bass voice Visuals can leave silent or call via onGateSideSample.
+      // Hits alternate C2 <-> G2 inside playLucidBassTone (role bass / pathId lucid-bass).
+      voices.push({
+        name: "Bass",
+        role: "bass",
+        beatsInCycle: 1,
+        usePeriod: true,
+        periodSec: base * 2.6,
+        pitchMode: "note",
+        note: "C2",
+        pathKind: "bar",
+        pathId: "lucid-bass",
+        waveform: "kick",
+        volume: 0.4,
+        simplicity: 88,
+        phase: 0,
+        pan: 0,
+        mute: true,
+        color: COLORS[6],
+      });
+      return {
+        bpm: 52,
+        useBpm: true,
+        masterSimplicity: 76,
+        reverbWet: 0.48,
+        delayWet: 0.2,
+        evolve: false,
+        evolveRate: 0.06,
+        visualMode: "lucid",
+        voices,
+      };
+    },
+    // Nested Triangles — nested steps inside a large triangle. Visuals owns draw.
+    // Chord: Am (A/C/E bank notes only). Chime on outer edge only.
+    "Nested Triangles": () => {
+      const notes = ["A4", "C4", "E4", "A3", "C3", "E3", "A2"];
+      const base = 240 / 46;
+      const voices = notes.map((note, i) => ({
+        name: "Tri " + i,
+        beatsInCycle: 2 + i,
+        usePeriod: true,
+        // Related periods so steps pulse in sequence (inner faster, outer slower).
+        periodSec: base * (1 + i * 0.11),
+        pitchMode: "note",
+        note,
+        pathKind: "triangle",
+        pathId: "tri-" + i,
+        waveform: "chime",
+        volume: 0.18 + (0.1 * (i % 4)) / 3,
+        simplicity: 76,
+        phase: (i * 0.09) % 1,
+        pan: -0.4 + (i / Math.max(1, notes.length - 1)) * 0.8,
+        color: COLORS[i % COLORS.length],
+      }));
+      return {
+        bpm: 46,
+        useBpm: true,
+        masterSimplicity: 74,
+        reverbWet: 0.44,
+        delayWet: 0.18,
+        evolve: false,
+        evolveRate: 0.06,
+        visualMode: "triangles",
+        voices,
+      };
+    },
   };
 
   // Circular Rhythm. One note per ring, index 0 innermost / highest.
@@ -275,6 +363,154 @@
     if (typeof renderVoiceList === "function") renderVoiceList();
   }
 
+  // ----- Lucid Rhythms (mode "lucid") -----
+  // C major only: bars are C/E/G chord tones; bass alternates C2 <-> G2.
+  // Visuals owns the ten-bar draw. Audio owns pitches / periods / harp.
+  // BOTTOM LINE ONLY (every bar / voice): sound fires solely when a rectangle
+  // meets the bottom hit line. Tops and other edges stay silent.
+  // Visuals: onGateSideSample(v, +1) at bottom; never playVoiceHit on top bounce.
+  // Audio also ignores Lucid flips to side -1. Bass C2<->G2 advances only then.
+  // Index 0 = leftmost / lowest. Index 9 = rightmost / highest.
+  const LUCID_BAR_NOTES = ["C2", "E2", "G2", "C3", "E3", "G3", "C4", "E4", "G4", "C5"];
+
+  function lucidBarPeriod(i) {
+    const base = 240 / Math.max(20, state.bpm);
+    return base * (1 + (i | 0) * 0.041);
+  }
+
+  function publishLucidRhythm() {
+    const notes = LUCID_BAR_NOTES.slice();
+    state.lucidRhythm = {
+      chord: "C",
+      barCount: notes.length,
+      notes: notes,
+      bassNotes: (typeof LUCID_BASS_NOTES !== "undefined" ? LUCID_BASS_NOTES.slice() : ["C2", "G2"]),
+    };
+  }
+
+  // Retarget in place so dials can refresh periods without wiping _gateSideSeen.
+  // Callers that jump phase/tempo should quietCrossings() first.
+  function installLucidVoices() {
+    const notes = LUCID_BAR_NOTES;
+    const n = notes.length;
+    const fieldsFor = (i) => ({
+      name: "Bar " + i,
+      note: notes[i],
+      volume: 0.2 + (0.08 * (i % 5)) / 4,
+      pathKind: "bar",
+      pathId: "lucid-" + i,
+      role: "",
+      waveform: "harp",
+      pitchMode: "note",
+      phase: (i * 0.07) % 1,
+      usePeriod: true,
+      periodSec: lucidBarPeriod(i),
+      beatsInCycle: 3 + i,
+      mute: false,
+      pan: -0.45 + (i / 9) * 0.9,
+      color: COLORS[i % COLORS.length],
+    });
+    const bassFields = {
+      name: "Bass",
+      role: "bass",
+      note: "C2",
+      volume: 0.4,
+      pathKind: "bar",
+      pathId: "lucid-bass",
+      waveform: "kick",
+      pitchMode: "note",
+      phase: 0,
+      usePeriod: true,
+      periodSec: lucidBarPeriod(0) * 2.6,
+      beatsInCycle: 1,
+      mute: true,
+      pan: 0,
+      color: COLORS[6],
+    };
+    const slots = n + 1; // 10 harp bars + muted bass slot
+    while (state.voices.length > slots) state.voices.pop();
+    for (let i = 0; i < n; i++) {
+      const fields = fieldsFor(i);
+      if (state.voices[i]) {
+        const staying = state.voices[i].pathId === "lucid-" + i && !state.voices[i].mute;
+        Object.assign(state.voices[i], fields);
+        if (!staying) state.voices[i]._gateSideSeen = null;
+        publishPitchHint(state.voices[i]);
+      } else {
+        state.voices.push(makeVoice(fields));
+      }
+    }
+    const bi = n;
+    if (state.voices[bi]) {
+      Object.assign(state.voices[bi], bassFields);
+      publishPitchHint(state.voices[bi]);
+    } else {
+      state.voices.push(makeVoice(bassFields));
+    }
+    publishLucidRhythm();
+    if (typeof renderVoiceList === "function") renderVoiceList();
+  }
+
+  // ----- Nested Triangles (mode "triangles") -----
+  // Am chord tones only (A/C/E). pathIds tri-0..tri-6 (inner → outer).
+  // Visuals owns the nested-triangle draw. Audio owns pitches / periods / chime.
+  // OUTER EDGE ONLY: Visuals calls onGateSideSample(v, +1) when a step meets the
+  // outer edge of the large triangle; never on inner edges or return path.
+  // Audio ignores triangles flips to -1 (latch only). schedule() never invents hits.
+  const TRIANGLE_STEP_NOTES = ["A4", "C4", "E4", "A3", "C3", "E3", "A2"];
+
+  function triangleStepPeriod(i) {
+    const base = 240 / Math.max(20, state.bpm);
+    return base * (1 + (i | 0) * 0.11);
+  }
+
+  function publishTriangleRhythm() {
+    const notes = TRIANGLE_STEP_NOTES.slice();
+    state.triangleRhythm = {
+      chord: "Am",
+      stepCount: notes.length,
+      notes: notes,
+    };
+  }
+
+  // Retarget in place so dials can refresh periods without wiping _gateSideSeen.
+  // Callers that jump phase/tempo should quietCrossings() first.
+  function installTriangleVoices() {
+    const notes = TRIANGLE_STEP_NOTES;
+    const n = notes.length;
+    const fieldsFor = (i) => ({
+      name: "Tri " + i,
+      note: notes[i],
+      volume: 0.18 + (0.1 * (i % 4)) / 3,
+      pathKind: "triangle",
+      pathId: "tri-" + i,
+      role: "",
+      waveform: "chime",
+      pitchMode: "note",
+      phase: (i * 0.09) % 1,
+      usePeriod: true,
+      periodSec: triangleStepPeriod(i),
+      beatsInCycle: 2 + i,
+      mute: false,
+      pan: -0.4 + (i / Math.max(1, n - 1)) * 0.8,
+      color: COLORS[i % COLORS.length],
+    });
+    while (state.voices.length > n) state.voices.pop();
+    for (let i = 0; i < n; i++) {
+      const fields = fieldsFor(i);
+      if (state.voices[i]) {
+        const staying = state.voices[i].pathId === "tri-" + i && !state.voices[i].mute;
+        Object.assign(state.voices[i], fields);
+        if (!staying) state.voices[i]._gateSideSeen = null;
+        publishPitchHint(state.voices[i]);
+      } else {
+        state.voices.push(makeVoice(fields));
+      }
+    }
+    publishTriangleRhythm();
+    if (typeof renderVoiceList === "function") renderVoiceList();
+  }
+
   function applyPreset(name) {
     const factory = PRESETS[name];
     if (!factory) return;
@@ -293,6 +529,14 @@
     state.voices = (p.voices || []).map((v) => makeVoice(v));
     state.voices.forEach(publishPitchHint);
     if (name === "Circular Rhythm") publishCircularRhythm("C", 0, state.voices.length);
+    if (name === "Lucid Rhythms") {
+      lucidBarHitCount = 0;
+      lucidBassHitCount = 0;
+      publishLucidRhythm();
+    }
+    if (name === "Nested Triangles") {
+      publishTriangleRhythm();
+    }
     if (ctx) {
       reverbGain.gain.value = state.reverbWet;
       delayGain.gain.value = state.delayWet;

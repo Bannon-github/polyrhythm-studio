@@ -19,6 +19,7 @@
     else if (mode === "sineRibbons") drawSineRibbons(g, w, h, transport);
     else if (mode === "cubes") drawCubes(g, w, h, transport);
     else if (mode === "gate") drawGate(g, w, h, transport);
+    else if (mode === "lucid") drawLucid(g, w, h, transport);
     else drawPendulum(g, w, h, transport);
 
     // decay flashes

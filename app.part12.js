@@ -60,6 +60,11 @@
     });
   }
 
+  // Audio contract (Nested Triangles / mode "triangles"):
+  // Visuals owns this draw. When wiring nested-triangle outer-edge hits, call
+  // onGateSideSample(v, +1) ONLY at the OUTER edge of the large triangle;
+  // call onGateSideSample(v, -1) while inside (latch, no tone). Never fire on
+  // inner edges or the return path. Audio ignores triangles flips to -1.
   function drawTriangles(g, w, h, t) {
     const n = state.voices.length || 1;
     const cols = Math.ceil(Math.sqrt(n));

@@ -14,6 +14,16 @@
     // flash for visual
     v._flash = 1;
     v._lastHitAt = transportTime();
+
+    // Lucid bar harp: occasional low bass side-chain (every LUCID_BASS_EVERY-th
+    // bottom hit). Bass alternates C2 <-> G2 and only advances here / on lucid-bass
+    // playVoiceHit — both gated by onGateSideSample's Lucid bottom-only rule.
+    if (typeof isLucidBarVoice === "function" && isLucidBarVoice(v) && wave === "harp") {
+      lucidBarHitCount += 1;
+      if (lucidBarHitCount % LUCID_BASS_EVERY === 0) {
+        playLucidBassTone(when + 0.01, densityGain * 0.9, pan * 0.35, 0.38);
+      }
+    }
   }
 
   function transportTime() {
@@ -21,10 +31,30 @@
     return pauseAccum + (ctx.currentTime - transportStart);
   }
 
-  // Gate, Circular, and Cubes frames own the tone. Their draws write
-  // v._gateSide = Math.sign(orbX - gx) then call this before paint so _flash
-  // lands on that frame. 0 is on the line, not a hit. Same side again is not
-  // a second hit. Other visual modes must not call playVoiceHit.
+  // Gate, Circular, Cubes, Lucid, and Nested Triangles frames own the tone.
+  // Their draws write v._gateSide then call this before paint so _flash lands
+  // on that frame. 0 is on the line, not a hit. Same side again is not a second hit.
+  // Other visual modes must not call playVoiceHit.
+  //
+  // Lucid (vertical bars) — BOTTOM LINE ONLY:
+  //   Only one line produces sound per bar: the bottom hit line.
+  //   Visuals: call onGateSideSample ONLY when a rectangle meets the bottom.
+  //   Never call playVoiceHit on the top bounce. Tops stay silent.
+  //   Convention: side +1 = at/below the bottom line; side -1 = above it (top half).
+  //   Audio enforces this: for visualMode "lucid", a flip TO +1 may sound;
+  //   a flip TO -1 only latches side memory and never starts a note.
+  //   Harp bar hits and alternating C2/G2 bass both require that bottom meeting.
+  //   schedule() never invents Lucid hits. Gate / Circular / Cubes geometry unchanged.
+  //
+  // Nested Triangles (visualMode "triangles") — OUTER EDGE ONLY:
+  //   Visuals owns drawTriangles / the nested-triangle machine. Audio owns pitches.
+  //   Contract for Visuals:
+  //     call onGateSideSample(v, +1) ONLY when a nested triangle step meets the
+  //     OUTER edge of the large triangle; never on inner edges or the return path.
+  //     call onGateSideSample(v, -1) when inside (latch only — Audio ignores tone).
+  //   Convention: side +1 = at outer edge; side -1 = inside. Audio sounds only on
+  //   flip TO +1. Flip TO -1 latches and stays silent. schedule() never invents hits.
+  //
   // A dial tick jumps phase (tempo) or the line. That is not a meeting.
   // Hold crossings quiet until the frame after the tick has latched the new side.
   let crossingsQuiet = false;
@@ -32,7 +62,7 @@
   function releaseCrossings() { crossingsQuiet = false; }
 
   function onGateSideSample(v, side) {
-    if (state.visualMode !== "gate" && state.visualMode !== "circular" && state.visualMode !== "cubes") {
+    if (state.visualMode !== "gate" && state.visualMode !== "circular" && state.visualMode !== "cubes" && state.visualMode !== "lucid" && state.visualMode !== "triangles") {
       v._gateSideSeen = null;
       return false;
     }
@@ -50,6 +80,10 @@
     v._gateSideSeen = side;
     if (prev !== -1 && prev !== 1) return false;
     if (prev === side) return false;
+    // Lucid: only the bottom meeting sounds. Flip to -1 (top) stays silent.
+    // Triangles: only the outer-edge meeting sounds. Flip to -1 (inside) stays silent.
+    // Gate / Circular / Cubes still fire on either flip.
+    if ((state.visualMode === "lucid" || state.visualMode === "triangles") && side !== 1) return false;
     if (!state.playing || !ctx) return false;
     publishPitchHint(v);
     playVoiceHit(v, ctx.currentTime + 0.003, 1);
@@ -69,7 +103,7 @@
     // Turnaround steps the note with the bar. It does not call playVoiceHit.
     if (typeof advanceCircularTurnaround === "function") advanceCircularTurnaround();
     // Timer stays up so the clock keeps ticking. It must not invent notes.
-    if (state.visualMode !== "gate" && state.visualMode !== "circular" && state.visualMode !== "cubes") {
+    if (state.visualMode !== "gate" && state.visualMode !== "circular" && state.visualMode !== "cubes" && state.visualMode !== "lucid" && state.visualMode !== "triangles") {
       state.voices.forEach((v) => {
         v._nextGateAfter = null;
         v._gateSideSeen = null;
@@ -135,5 +169,6 @@
       hz: partial.hz ?? 261.63,
       pathKind: partial.pathKind || "",
       pathId: partial.pathId || "",
+      role: partial.role || "",
       waveform: partial.waveform || "sine",
       volume: partial.volume ?? 0.55,

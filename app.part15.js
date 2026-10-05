@@ -621,6 +621,12 @@
         const ctx2 = c.getContext("2d");
         drawCubes(ctx2, c.clientWidth, c.clientHeight, transport, true);
       }
+      else if (state.visualMode === "lucid") {
+        const c = canvas();
+        const transport = state.playing ? transportTime() : pauseAccum;
+        const ctx2 = c.getContext("2d");
+        drawLucid(ctx2, c.clientWidth, c.clientHeight, transport, true);
+      }
       state.voices.forEach((v) => {
         v._flash = Math.max(0, (v._flash || 0) - 0.028);
         if (v._flash === 0) { v._flashX = null; v._flashY = null; }
