@@ -45,6 +45,59 @@
     return stopAt;
   }
 
+  // ----- Polysynth voice allocator -----
+  // POLYSYNTH: each playVoiceHit / bass thump is an independent voice
+  // (own osc/filter/amp/envelope graph). Distinct pathIds (tri-0…tri-6,
+  // lucid-0…lucid-9, lucid-bass, gate/circular/cubes paths) sustain together
+  // as chords/pads. Same pathId retrigger releases only that path's prior
+  // note (normal same-key). Oldest-voice steal only when over POLYPHONY_LIMIT.
+  // Future modes inherit this shared allocator via playVoiceHit.
+  const POLYPHONY_LIMIT = 24; // ≥16; room for full Lucid chord + bass + Triangles overlap
+  let polyVoices = []; // { key, g, endAt }
+
+  function polyPathKey(v) {
+    if (!v) return "anon";
+    const id = String(v.pathId || "");
+    if (id) return id;
+    return "id:" + String(v.id != null ? v.id : "x");
+  }
+
+  function prunePolyVoices(now) {
+    polyVoices = polyVoices.filter((s) => s && s.endAt > now - 0.05);
+  }
+
+  function silencePolySlot(slot, when) {
+    if (!slot || !slot.g || !ctx) return;
+    try {
+      const param = slot.g.gain;
+      const t = Math.max(when, ctx.currentTime);
+      param.cancelScheduledValues(t);
+      let cur = 0.001;
+      try { cur = Math.max(0.001, param.value); } catch (e) {}
+      param.setValueAtTime(cur, t);
+      param.exponentialRampToValueAtTime(0.001, t + 0.025);
+    } catch (e) {}
+  }
+
+  // Register one logical hit. Same-key release first; then oldest steal if full.
+  // Does not touch other pathIds' envelopes.
+  function allocPolyVoice(pathKey, g, when, endAt) {
+    if (!ctx || !g) return;
+    const now = when;
+    prunePolyVoices(now);
+    const key = String(pathKey || "anon");
+    for (let i = polyVoices.length - 1; i >= 0; i--) {
+      if (polyVoices[i].key === key) {
+        silencePolySlot(polyVoices[i], now);
+        polyVoices.splice(i, 1);
+      }
+    }
+    while (polyVoices.length >= POLYPHONY_LIMIT) {
+      silencePolySlot(polyVoices.shift(), now);
+    }
+    polyVoices.push({ key: key, g: g, endAt: endAt });
+  }
+
   // Lucid Rhythms bass: C major root/fifth an octave below the bars.
   // Alternates exactly C2 <-> G2 on successive bass hits (not random, not fixed).
   // Only advances on bottom-line meetings (onGateSideSample Lucid side===+1).
@@ -112,8 +165,11 @@
     body.stop(now + 0.6);
     sub.start(now);
     sub.stop(now + 0.6);
+    allocPolyVoice("lucid-bass", g, now, now + 0.6);
   }
 
+  // One independent voice articulation per call (polysynth). Never reuses a
+  // shared OscillatorNode / GainNode across pathIds. Chord stacks = overlap.
   function playVoiceHit(v, when, densityGain = 1) {
     if (v.mute || !ctx) return;
 

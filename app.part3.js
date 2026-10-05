@@ -11,6 +11,9 @@
       srcEnd = now + rel + 0.06;
     }
 
+    // Polysynth: register this hit's amp. Same pathId may restart; other paths keep ringing.
+    allocPolyVoice(polyPathKey(v), g, now, srcEnd);
+
     // flash for visual
     v._flash = 1;
     v._lastHitAt = transportTime();

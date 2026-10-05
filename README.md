@@ -38,6 +38,12 @@ Its own machine. Ten crystal shafts in a row, low pitch left to high right (C2â€
 
 Cubes stick on the sill through the hit flash, then rebound. One Lucid panel. No Gate Looks row.
 
+## Nested Triangles
+
+Its own machine. Concentric nested triangles with independent travelers on tri-0â€¦tri-6. Hits flash only on the outer edge. Voices overlap as a polysynth chord (Am chime), not a mono choke.
+
+Sequential pulse moves in to out. One panel. Lucid, Circular, and Cube stay separate machines.
+
 ## Gate
 
 Still in the menu. Orbs travel geometric paths and sound when they cross the shared center line. Older pendulum, mandala, wave, and ribbon views are in the same menu.

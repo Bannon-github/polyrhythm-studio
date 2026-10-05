@@ -425,6 +425,10 @@
           applyPreset("Lucid Rhythms");
           return;
         }
+        if (btn.dataset.mode === "triangles" && typeof triangleMachineLive === "function" && !triangleMachineLive()) {
+          applyPreset("Nested Triangles");
+          return;
+        }
         state.visualMode = btn.dataset.mode;
         syncMasterUI();
         saveLocal("autosave");
@@ -439,6 +443,10 @@
         }
         if (e.target.value === "lucid" && typeof lucidMachineLive === "function" && !lucidMachineLive()) {
           applyPreset("Lucid Rhythms");
+          return;
+        }
+        if (e.target.value === "triangles" && typeof triangleMachineLive === "function" && !triangleMachineLive()) {
+          applyPreset("Nested Triangles");
           return;
         }
         state.visualMode = e.target.value;

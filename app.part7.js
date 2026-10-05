@@ -158,6 +158,7 @@
     document.body.classList.toggle("mode-circular", mode === "circular");
     document.body.classList.toggle("mode-cubes", mode === "cubes");
     document.body.classList.toggle("mode-lucid", mode === "lucid");
+    document.body.classList.toggle("mode-triangles", mode === "triangles");
     document.body.classList.toggle("mode-gate", mode === "gate");
     const lookRow = $("#gateLooks");
     if (lookRow) lookRow.hidden = mode !== "gate";
@@ -166,8 +167,8 @@
     const cubeRow = $("#cubeDials");
     if (cubeRow) cubeRow.hidden = mode !== "cubes";
     const dialRow = $("#dialRow");
-    // Circular, Cube, and Lucid own the stage. Gate and other modes keep the shared dials.
-    if (dialRow) dialRow.hidden = mode === "circular" || mode === "cubes" || mode === "lucid";
+    // Circular, Cube, Lucid, and Nested Triangles own the stage. Gate and other modes keep shared dials.
+    if (dialRow) dialRow.hidden = mode === "circular" || mode === "cubes" || mode === "lucid" || mode === "triangles";
     document.querySelectorAll("#dialRow [data-dial='chord'], #dialRow [data-dial='rings']").forEach((el) => {
       el.hidden = true;
     });
@@ -177,5 +178,8 @@
     }
     if (state.visualMode === "lucid" && typeof ensureLucidMachine === "function") {
       ensureLucidMachine();
+    }
+    if (state.visualMode === "triangles" && typeof ensureTriangleMachine === "function") {
+      ensureTriangleMachine();
     }
     if (typeof syncCircularDialReadouts === "function") syncCircularDialReadouts();
