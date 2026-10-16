@@ -15,7 +15,7 @@
 
   // Nearest note in one bank by log frequency. Exact bank notes land at
   // playbackRate 1 because hz is NOTE_FREQ. Rates outside 0.8–1.25 are not stretched.
-  // bank is either gateSamples or cubeSamples, never both.
+  // bank is the shared sample pool used by every geometry mode.
   // Returns the stop offset in seconds, or 0 when the hit should use the oscillator.
   function connectGateSample(g, now, vol, freq, bank) {
     if (!bank) return 0;
@@ -202,15 +202,12 @@
     const now = when;
     let srcEnd = now + 1.2;
 
-    // sine, triangle, bell, pad: one sample bank replaces the oscillator.
-    // Cube faces use the wood-block map. Gate and Circular stay on the mallets.
-    // harp and chime stay generative (never gateSamples / cubeSamples).
+    // sine, triangle, bell, pad: one shared sample bank replaces the oscillator.
+    // harp and chime stay generative (never sample-bank playback).
     // noise and kick stay below. saw and square stay on the oscillator branch.
     let sampleStop = 0;
     if (wave === "sine" || wave === "triangle" || wave === "bell" || wave === "pad") {
-      const cubeHit = state.visualMode === "cubes" || String(v.pathId || "").indexOf("cube-") === 0;
-      if (cubeHit) sampleStop = connectGateSample(g, now, vol, freq, cubeSamples);
-      else sampleStop = connectGateSample(g, now, vol, freq, gateSamples);
+      sampleStop = connectGateSample(g, now, vol, freq, gateSamples);
     }
 
     if (sampleStop > 0) {

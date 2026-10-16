@@ -203,14 +203,20 @@
     bindCubeControls();
     const nest = Math.max(1, Math.min(4, cubeNest | 0));
     cubeNest = nest;
-    const plan = cubePlan(nest);
-    let ok = state.voices.length === plan.length && cubeInstalledNest === nest;
-    if (ok) {
-      for (let i = 0; i < plan.length; i++) {
-        if (!state.voices.some((v) => v.pathId === plan[i].pathId)) { ok = false; break; }
+  }
+
+  function cubeSlotForVoice(v, i, plan) {
+    const id = String(v.pathId || "");
+    if (id.indexOf("cube-") === 0) {
+      const bits = id.split("-");
+      const shell = Number(bits[1]);
+      const face = bits[2];
+      if (Number.isFinite(shell) && shell >= 0 && CUBE_FACES.includes(face)) {
+        return { shell, face };
       }
     }
-    if (!ok) installCubeVoices(nest);
+    const slot = plan[i % plan.length] || { nest: 0, face: CUBE_FACES[0] };
+    return { shell: slot.nest, face: slot.face };
   }
 
   function bindCubeControls() {
@@ -505,15 +511,16 @@
     const cy = h * 0.44;
     const unit = Math.min(w, h) * 0.20;
     const origin = cubeProject(0, 0, 0, cx, cy, unit, yaw);
+    const plan = cubePlan(nest);
+    const activeVoices = state.voices.filter((v) => !v.mute);
+    const voices = activeVoices.length ? activeVoices : state.voices;
+    for (let i = 0; i < state.voices.length; i++) state.voices[i]._cubeDraw = null;
 
-    for (let i = 0; i < state.voices.length; i++) {
-      const v = state.voices[i];
-      const id = String(v.pathId || "");
-      if (id.indexOf("cube-") !== 0) continue;
-      const bits = id.split("-");
-      const shell = Number(bits[1]);
-      const face = bits[2];
-      if (!CUBE_FACES.includes(face) || !(shell >= 0)) continue;
+    for (let i = 0; i < voices.length; i++) {
+      const v = voices[i];
+      const slot = cubeSlotForVoice(v, i, plan);
+      const shell = Math.max(0, Math.min(nest - 1, slot.shell | 0));
+      const face = slot.face;
       const scale = cubeShellScale(shell, nest);
       const ends = cubeFaceEnds(scale, face);
       const stair = cubeStair(v, t);

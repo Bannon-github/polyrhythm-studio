@@ -85,13 +85,16 @@
 
   function ensureLucidMachine() {
     if (state.visualMode !== "lucid") return;
-    if (lucidMachineLive()) return;
-    if (typeof installLucidVoices === "function") {
-      installLucidVoices();
-      if (!state.activePreset) state.activePreset = "Lucid Rhythms";
-      return;
+    if (!state.lucidRhythm || !Array.isArray(state.lucidRhythm.notes)) {
+      state.lucidRhythm = {
+        chord: "C",
+        barCount: Math.max(1, state.voices.length || 1),
+        notes: [],
+        bassNotes: ["C2", "G2"],
+      };
+    } else {
+      state.lucidRhythm.barCount = Math.max(1, state.voices.length || 1);
     }
-    if (typeof applyPreset === "function") applyPreset("Lucid Rhythms");
   }
 
   function tickLucidFx(dt) {

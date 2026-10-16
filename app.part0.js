@@ -104,10 +104,8 @@
   let pauseAccum = 0;
   let autoHideTimer = null;
   let lastSched = 0;
-  // Gate sample bank: note -> { note, hz, buffer }. Empty until loadGateSamples finishes.
+  // Shared sample bank: note -> { note, hz, buffer }. Empty until loadGateSamples finishes.
   let gateSamples = Object.create(null);
-  // Cube face bank. Separate from the mallet map. Empty until loadCubeSamples finishes.
-  let cubeSamples = Object.create(null);
 
   function makeImpulse(seconds = 4.25, decay = 3.0) {
     const rate = ctx.sampleRate;
