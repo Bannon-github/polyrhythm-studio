@@ -34,10 +34,15 @@
     </header>
 
     <div class="stage-wrap">
+      <canvas id="fogLayer" aria-hidden="true"></canvas>
       <canvas id="stage" aria-label="Polyrhythm visualization"></canvas>
       <div class="stage-overlay">
         <span class="badge" id="badgeTime">0:00</span>
         <span class="badge" id="badgeMode">pendulum</span>
+      </div>
+      <div class="stage-controls" id="liftControls">
+        <span class="badge lift-info" id="liftInfo" aria-live="off"></span>
+        <button type="button" id="liftBtn" title="Hold to raise every orb. The longer you hold, the higher they go. Release to let them fall.">⬆ Hold to lift</button>
       </div>
     </div>
 
@@ -79,12 +84,9 @@
               <button type="button" data-sim-preset="medium">Medium</button>
               <button type="button" data-sim-preset="complex">Complex</button>
             </div>
-            <label class="field span2 chk" style="flex-direction:row;text-transform:none;letter-spacing:0;font-size:0.78rem;align-items:center">
-              <input type="checkbox" id="quadraticLength" /> Quadratic length (pendulum L ∝ T²)
-            </label>
             <p class="hint span2" style="grid-column:1/-1">
               Simplicity thins beat density and calms spacing — sparse lullaby vs busy polyrhythm.
-              Each voice also has its own simplicity slider. Quadratic length uses pendulum-wave math (longer = slower).
+              Each voice also has its own simplicity slider.
             </p>
           </div>
 

@@ -28,22 +28,32 @@ Runtime files: `index.html`, `styles.css`, `app.js` (tiny loader), `app.payload.
 - **Waves** — stacked horizontal sine/hammer wave bars (*Hammer Waves* feel).
 - **Sine ribbons** — stacked full-width sine curves (*Sine Rhythms* feel).
 
-### Quadratic Displacement (pendulum)
-When **Quadratic length** is on, pendulum string length scales with period squared (`L ∝ T²`), matching physical pendulums / classic “pendulum wave” demos: slower voices hang longer, faster ones shorter, so phases bloom and re-align visually. When it is off, lengths are spaced by period ratio so fast voices stay readable instead of bunching up near the pivot.
+### The pendulum machine
+Every orb hangs from one pivot at the top centre on its own string, and a taut string runs straight down the middle of the stage. The sound is made by the orbs crossing that string.
+
+- **Real gravity.** Each orb is a dense sphere swinging under `g = 9.81 m/s²` with almost no air resistance (only a tiny pivot friction). The swing from the top to the bottom takes **5–10 s**, so strings are roughly **99–398 m** long. The HUD shows the scale (about 1.1 m per screen pixel).
+- **Lift and release.** Hold **⬆ Hold to lift** (or Space/Enter on the button) to raise all the orbs; the longer you hold, the higher they go (up to 90°). Let go and they fall freely from that height. The badge shows how long they will keep ringing.
+- **Every crossing rings.** Each pass through the centre sounds a long bell-like tone, and the orb glows with the tone's volume, brightening and fading with it. In this mode, tempo comes from the pendulum lengths rather than BPM, and Simplicity only thins the overall level.
+- **Colour by pitch.** Glossy dark red for the lowest tone, through orange and yellow, to bright blue and violet for the highest.
+- **Vibrating string.** The centre string blurs and shimmers in the colour of the orb that just crossed it.
+- **Fog.** A slow fog always drifts across the stage. The light from each ringing orb is scattered and refracted through it, with colour fringes at the edges.
+- **4K.** The drawing is rendered at up to 3840×2160 and scaled to fit.
+
+The other visual modes keep the original beat-grid timing.
 
 ### Voices (up to 12)
 Beats-in-cycle or period (seconds), pitch (note or Hz), waveform (`sine` / `triangle` / `saw` / `square` / `noise` / `bell` / `kick` / `pad`), volume, mute, color, pan, and **simplicity** (master + per-voice).
 
 ### Presets
 - `3:2 classic`, `5:4`
-- `Space Pendulum` — pendulum mode
+- `Space Pendulum` — pendulum machine
 - `Hammer Waves` — waves mode
 - `Deep Ambient / Black Hole`, `Space Lullaby`
 - `Sine Rhythms` — sineRibbons mode
 - `Mandala` — mandala mode
 - `Spinning Triangles` — triangles mode
 - `Pulse Orbits` — circular + orbit-y phased voices
-- `Lost In Space` — very sparse, high simplicity, quadratic pendulum
+- `Lost In Space` — very sparse, high simplicity
 
 **Save / Load** uses `localStorage`. Polyrhythm helper sets A:B on the first two voices. **Evolve** drifts pitches/periods.
 
