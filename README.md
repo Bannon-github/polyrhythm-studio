@@ -31,7 +31,7 @@ Runtime files: `index.html`, `styles.css`, `app.js` (tiny loader), `app.payload.
 ### The pendulum machine
 Every orb hangs from one pivot at the top centre on its own string, and a taut string runs straight down the middle of the stage. The sound is made by the orbs crossing that string.
 
-- **Real gravity.** Each orb is a dense sphere swinging under `g = 9.81 m/s²` with almost no air resistance (only a tiny pivot friction). The swing from the top to the bottom takes **5–10 s**, so strings are roughly **99–398 m** long. The HUD shows the scale (about 1.1 m per screen pixel).
+- **Real gravity.** Each orb is a dense sphere swinging under `g = 9.81 m/s²` with almost no air resistance (only a tiny pivot friction). Half a swing (from the top down to the centre line) takes **5–7 s**, so the strings are roughly **100–190 m** long. They hang close together: the voices average about 6 s, and a voice that is faster or slower only moves a little away from that, however far apart their periods are. The HUD shows the string lengths and the scale.
 - **Lift and release.** Hold **⬆ Hold to lift** (or Space/Enter on the button) to raise all the orbs; the longer you hold, the higher they go (up to 90°). Let go and they fall freely from that height. The badge shows how long they will keep ringing.
 - **Every crossing rings.** Each pass through the centre sounds a long bell-like tone, and the orb glows with the tone's volume, brightening and fading with it. In this mode, tempo comes from the pendulum lengths rather than BPM, and Simplicity only thins the overall level.
 - **Colour by pitch.** Glossy dark red for the lowest tone, through orange and yellow, to bright blue and violet for the highest.
