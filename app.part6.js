@@ -285,7 +285,7 @@
   }
 
   function circularMachineLive() {
-    return state.visualMode === "circular" && state.activePreset === "Circular Rhythm" && !!state.circularRhythm;
+    return state.visualMode === "circular";
   }
 
   function publishCircularRhythm(progression, chordIndex, ringCount) {

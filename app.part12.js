@@ -76,13 +76,15 @@
 
   function ensureTriangleMachine() {
     if (state.visualMode !== "triangles") return;
-    if (triangleMachineLive()) return;
-    if (typeof installTriangleVoices === "function") {
-      installTriangleVoices();
-      if (!state.activePreset) state.activePreset = "Nested Triangles";
-      return;
+    if (!state.triangleRhythm || !Array.isArray(state.triangleRhythm.notes)) {
+      state.triangleRhythm = {
+        chord: "Am",
+        stepCount: Math.max(1, state.voices.length || 1),
+        notes: [],
+      };
+    } else {
+      state.triangleRhythm.stepCount = Math.max(1, state.voices.length || 1);
     }
-    if (typeof applyPreset === "function") applyPreset("Nested Triangles");
   }
 
   function syncTriangleChrome() {

@@ -33,7 +33,7 @@
   }
 
   // ----- Circular Rhythm machine (mode "circular") -----
-  // Canvas-only layer. Audio owns notes / pathIds / period via installCircularVoices.
+  // Canvas-only layer. Uses the shared voice pool from the global voice settings.
   // Index 0 = innermost / highest. Period grows with ring index. Phase 0. Tone via onGateSideSample.
   const CIRC_RING_MIN = 1;
   const CIRC_RING_MAX = 8;
@@ -48,8 +48,9 @@
   }
 
   function circRingCount() {
-    const cr = state.circularRhythm;
-    const n = (cr && cr.ringCount) || state.circularRings || state.voices.length || 8;
+    const configured = (state.circularRhythm && state.circularRhythm.ringCount) || state.circularRings || CIRC_RING_MAX;
+    const available = Math.max(1, state.voices.length || 1);
+    const n = Math.min(configured, available);
     return Math.max(CIRC_RING_MIN, Math.min(CIRC_RING_MAX, n | 0));
   }
 
@@ -64,26 +65,15 @@
   function ensureCircularMachine() {
     if (state.visualMode !== "circular") return;
     state.circularRings = circRingCount();
-    // Prefer Audio's live machine. If voices already carry ring-0..N, do not reinstall.
-    const n = circRingCount();
-    let ok = state.voices.length >= n;
-    if (ok) {
-      for (let i = 0; i < n; i++) {
-        if (!circVoiceAtRing(i)) { ok = false; break; }
-      }
-    }
-    if (ok) return;
-    if (typeof installCircularVoices === "function") {
-      const prog = (state.circularRhythm && state.circularRhythm.progression)
-        || (typeof CIRC_PROGRESSIONS !== "undefined" ? CIRC_PROGRESSIONS[state.circularChord | 0] : "C")
-        || "C";
-      const idx = (state.circularRhythm && state.circularRhythm.chordIndex) || 0;
-      installCircularVoices(prog, idx, n);
-      if (!state.activePreset) state.activePreset = "Circular Rhythm";
-      return;
-    }
-    if (typeof applyPreset === "function" && state.activePreset !== "Circular Rhythm") {
-      applyPreset("Circular Rhythm");
+    if (!state.circularRhythm) {
+      state.circularRhythm = {
+        progression: "C",
+        chordIndex: 0,
+        ringCount: state.circularRings,
+        notes: [],
+      };
+    } else {
+      state.circularRhythm.ringCount = state.circularRings;
     }
   }
 

@@ -76,7 +76,7 @@
       evolveRate: data.evolveRate ?? state.evolveRate,
       masterSimplicity: data.masterSimplicity ?? 50,
       visualMode: data.visualMode || "gate",
-      circularRings: Math.max(3, Math.min(8, data.circularRings ?? state.circularRings ?? 8)),
+      circularRings: Math.max(1, Math.min(8, data.circularRings ?? state.circularRings ?? 8)),
       circularChord: Math.max(0, Math.min(5, data.circularChord ?? state.circularChord ?? 0)),
       circularZoom: Math.max(0.45, Math.min(1.85, data.circularZoom ?? state.circularZoom ?? 1)),
       circularLine: data.circularLine === false ? false : true,
@@ -172,14 +172,4 @@
     document.querySelectorAll("#dialRow [data-dial='chord'], #dialRow [data-dial='rings']").forEach((el) => {
       el.hidden = true;
     });
-    // When Circular is selected, keep voices on ring pathIds
-    if (state.visualMode === "circular" && typeof ensureCircularMachine === "function") {
-      ensureCircularMachine();
-    }
-    if (state.visualMode === "lucid" && typeof ensureLucidMachine === "function") {
-      ensureLucidMachine();
-    }
-    if (state.visualMode === "triangles" && typeof ensureTriangleMachine === "function") {
-      ensureTriangleMachine();
-    }
     if (typeof syncCircularDialReadouts === "function") syncCircularDialReadouts();

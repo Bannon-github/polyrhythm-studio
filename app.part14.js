@@ -262,16 +262,15 @@
 
   function setCircularRings(n) {
     const next = Math.max(1, Math.min(8, Math.round(n)));
-    if (!circularMachineLive()) applyPreset("Circular Rhythm");
-    const cr = state.circularRhythm;
-    if (cr.ringCount === next && state.voices.length === next) {
+    const cr = state.circularRhythm || { progression: "C", chordIndex: 0, ringCount: state.circularRings || 8, notes: [] };
+    if (cr.ringCount === next && state.circularRings === next) {
       syncDialReadouts();
       syncCircularDialReadouts();
       return;
     }
     quietCrossings();
-    installCircularVoices(cr.progression, cr.chordIndex, next);
-    if (typeof renderVoiceList === "function") renderVoiceList();
+    state.circularRings = next;
+    state.circularRhythm = Object.assign({}, cr, { ringCount: next });
     syncDialReadouts();
     syncCircularDialReadouts();
     saveLocal("autosave");
@@ -280,17 +279,16 @@
   function setCircularChord(i) {
     const ids = (typeof CIRC_PROGRESSIONS !== "undefined") ? CIRC_PROGRESSIONS : ["C"];
     const next = Math.max(0, Math.min(ids.length - 1, Math.round(i)));
-    if (!circularMachineLive()) applyPreset("Circular Rhythm");
     const progression = ids[next];
-    const cr = state.circularRhythm;
+    const cr = state.circularRhythm || { progression: "C", chordIndex: 0, ringCount: state.circularRings || 8, notes: [] };
     if (cr.progression === progression) {
       syncDialReadouts();
       syncCircularDialReadouts();
       return;
     }
     quietCrossings();
-    touchCircularNotesOnly(progression, 0);
-    if (typeof renderVoiceList === "function") renderVoiceList();
+    state.circularRhythm = Object.assign({}, cr, { progression, chordIndex: next });
+    state.circularChord = next;
     syncDialReadouts();
     syncCircularDialReadouts();
     saveLocal("autosave");
@@ -417,18 +415,6 @@
     $("#playBtn").addEventListener("click", togglePlay);
     document.querySelectorAll("[data-mode]").forEach((btn) => {
       btn.addEventListener("click", () => {
-        if (btn.dataset.mode === "circular" && !circularMachineLive()) {
-          applyPreset("Circular Rhythm");
-          return;
-        }
-        if (btn.dataset.mode === "lucid" && typeof lucidMachineLive === "function" && !lucidMachineLive()) {
-          applyPreset("Lucid Rhythms");
-          return;
-        }
-        if (btn.dataset.mode === "triangles" && typeof triangleMachineLive === "function" && !triangleMachineLive()) {
-          applyPreset("Nested Triangles");
-          return;
-        }
         state.visualMode = btn.dataset.mode;
         syncMasterUI();
         saveLocal("autosave");
@@ -437,18 +423,6 @@
     const visualModeEl = $("#visualMode");
     if (visualModeEl) {
       visualModeEl.addEventListener("change", (e) => {
-        if (e.target.value === "circular" && !circularMachineLive()) {
-          applyPreset("Circular Rhythm");
-          return;
-        }
-        if (e.target.value === "lucid" && typeof lucidMachineLive === "function" && !lucidMachineLive()) {
-          applyPreset("Lucid Rhythms");
-          return;
-        }
-        if (e.target.value === "triangles" && typeof triangleMachineLive === "function" && !triangleMachineLive()) {
-          applyPreset("Nested Triangles");
-          return;
-        }
         state.visualMode = e.target.value;
         syncMasterUI();
         saveLocal("autosave");
@@ -477,14 +451,6 @@
       state.bpm = nextBpm;
       $("#bpmVal").textContent = state.bpm;
       resetVoiceSchedulers();
-      if (circularMachineLive()) {
-        state.voices.forEach((v, i) => {
-          v.periodSec = circularRingPeriod(i);
-          v.beatsInCycle = i + 1;
-          v.usePeriod = true;
-          v.phase = 0;
-        });
-      }
       if (typeof syncCircularDialReadouts === "function") syncCircularDialReadouts();
     });
     $("#masterCycle").addEventListener("change", (e) => {
