@@ -20,7 +20,7 @@ Runtime files: `index.html`, `styles.css`, `app.js` (tiny loader), `app.payload.
 ## Features
 
 ### Visual modes
-- **Pendulum** — side-by-side pendulums with different periods. Optional **Quadratic length** (`L ∝ T²`).
+- **Pendulum** — every orb swings from one shared pivot at the top centre, each on its own string. A dashed line runs down the centre of the stage; an orb sounds its tone (in its own colour) at the instant it crosses that line, then swings out the other side. Slower voices hang on longer strings. Voices thinned out by **Simplicity** still cross the line, just silently. Optional **Quadratic length** (`L ∝ T²`).
 - **Circular** — concentric rings with orbiting beads (pulse orbits).
 - **Linear** — beat markers and a playhead.
 - **Mandala** — concentric petals/arcs rotating at each voice period.
@@ -29,7 +29,7 @@ Runtime files: `index.html`, `styles.css`, `app.js` (tiny loader), `app.payload.
 - **Sine ribbons** — stacked full-width sine curves (*Sine Rhythms* feel).
 
 ### Quadratic Displacement (pendulum)
-When **Quadratic length** is on, pendulum string length scales with period squared (`L ∝ T²`), matching physical pendulums / classic “pendulum wave” demos: slower voices hang longer, faster ones shorter, so phases bloom and re-align visually.
+When **Quadratic length** is on, pendulum string length scales with period squared (`L ∝ T²`), matching physical pendulums / classic “pendulum wave” demos: slower voices hang longer, faster ones shorter, so phases bloom and re-align visually. When it is off, lengths are spaced by period ratio so fast voices stay readable instead of bunching up near the pivot.
 
 ### Voices (up to 12)
 Beats-in-cycle or period (seconds), pitch (note or Hz), waveform (`sine` / `triangle` / `saw` / `square` / `noise` / `bell` / `kick` / `pad`), volume, mute, color, pan, and **simplicity** (master + per-voice).
