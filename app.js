@@ -1,7 +1,7 @@
 /** Polyrhythm Studio loader — fetches split payload then inflates */
 (async () => {
   try {
-    const parts = await Promise.all([0,1,2].map(i => fetch("app.payload." + i + ".b64").then(r => {
+    const parts = await Promise.all([0,1,2].map(i => fetch("app.payload." + i + ".b64", { cache: "no-cache" }).then(r => {
       if (!r.ok) throw new Error("payload." + i + " " + r.status);
       return r.text();
     })));

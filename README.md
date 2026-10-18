@@ -36,7 +36,9 @@ Beats-in-cycle or period (seconds), pitch (note or Hz), waveform (`sine` / `tria
 
 ### Presets
 - `3:2 classic`, `5:4`
-- `Space Pendulum`, `Hammer Waves`, `Deep Ambient / Black Hole`, `Space Lullaby`
+- `Space Pendulum` — pendulum mode
+- `Hammer Waves` — waves mode
+- `Deep Ambient / Black Hole`, `Space Lullaby`
 - `Sine Rhythms` — sineRibbons mode
 - `Mandala` — mandala mode
 - `Spinning Triangles` — triangles mode
